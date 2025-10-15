@@ -21,4 +21,7 @@ urlpatterns = [
     path('logout/',auth.LogoutView.as_view(template_name='user/index.html'),name='logout'),
     path('register/',user_view.register,name='register'),
 
+    #####parking related path##########################
+    path('parking/',include('parking.urls')),
+
 ]

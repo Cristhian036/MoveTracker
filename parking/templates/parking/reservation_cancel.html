@@ -1,0 +1,89 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-exclamation-triangle text-danger"></i> {{ title }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle"></i> Confirmar Cancelación
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>¿Está seguro que desea cancelar esta reserva?</strong>
+                </div>
+
+                <h5>Detalles de la Reserva:</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td width="150"><strong>ID:</strong></td>
+                        <td>#{{ reservation.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tipo:</strong></td>
+                        <td>
+                            {% if reservation.is_quick_reservation %}
+                                <span class="badge bg-warning text-dark">Reserva Rápida</span>
+                            {% else %}
+                                <span class="badge bg-info">Reserva Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cliente:</strong></td>
+                        <td>
+                            {% if reservation.is_quick_reservation %}
+                                {{ reservation.customer_name }}
+                            {% else %}
+                                {{ reservation.vehicle.owner.get_full_name|default:reservation.vehicle.owner.username }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vehículo:</strong></td>
+                        <td>
+                            {% if reservation.is_quick_reservation %}
+                                {{ reservation.vehicle_plate }}
+                            {% else %}
+                                {{ reservation.vehicle.license_plate }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Espacio:</strong></td>
+                        <td>Piso {{ reservation.reserved_space.floor.floor_number }} - Espacio {{ reservation.reserved_space.space_number }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inicio:</strong></td>
+                        <td>{{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fin:</strong></td>
+                        <td>{{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                </table>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'parking:reservation_detail' reservation.id %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> No, Volver
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Sí, Cancelar Reserva
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

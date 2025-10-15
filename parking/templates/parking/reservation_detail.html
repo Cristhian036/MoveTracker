@@ -1,0 +1,231 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{% url 'parking:reservation_list' %}" class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left"></i> Volver a la Lista
+        </a>
+        <h2><i class="bi bi-file-text"></i> {{ title }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Detalle de Reserva #{{ reservation.id }}</span>
+                <div>
+                    {% if reservation.is_quick_reservation %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-lightning-charge"></i> Reserva Rápida
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-calendar-check"></i> Reserva Normal
+                        </span>
+                    {% endif %}
+                    
+                    {% if reservation.is_cancelled %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-x-circle"></i> Cancelada
+                        </span>
+                    {% elif reservation.start_datetime > now %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-clock"></i> Pendiente
+                        </span>
+                    {% elif reservation.end_datetime < now %}
+                        <span class="badge bg-dark">
+                            <i class="bi bi-check-circle"></i> Completada
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-play-circle"></i> Activa
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if reservation.is_quick_reservation %}
+                    <!-- Información para Reserva Rápida -->
+                    <h5 class="mb-3"><i class="bi bi-person-badge"></i> Información del Cliente</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <td width="200"><strong>Nombre:</strong></td>
+                            <td>{{ reservation.customer_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Teléfono:</strong></td>
+                            <td><i class="bi bi-telephone"></i> {{ reservation.customer_phone }}</td>
+                        </tr>
+                        {% if reservation.customer_email %}
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td><i class="bi bi-envelope"></i> {{ reservation.customer_email }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+
+                    <hr>
+
+                    <h5 class="mb-3"><i class="bi bi-car-front"></i> Información del Vehículo</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <td width="200"><strong>Placa:</strong></td>
+                            <td>{{ reservation.vehicle_plate }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tipo de Vehículo:</strong></td>
+                            <td>
+                                {% if reservation.vehicle_type_temp == 'CAR' %}
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-car-front"></i> {{ reservation.get_vehicle_type_temp_display }}
+                                    </span>
+                                {% elif reservation.vehicle_type_temp == 'TRUCK' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-truck"></i> {{ reservation.get_vehicle_type_temp_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-bicycle"></i> {{ reservation.get_vehicle_type_temp_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                {% else %}
+                    <!-- Información para Reserva Normal -->
+                    <h5 class="mb-3"><i class="bi bi-person"></i> Información del Usuario</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <td width="200"><strong>Nombre:</strong></td>
+                            <td>{{ reservation.vehicle.owner.get_full_name|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Usuario:</strong></td>
+                            <td>{{ reservation.vehicle.owner.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td><i class="bi bi-envelope"></i> {{ reservation.vehicle.owner.email|default:"-" }}</td>
+                        </tr>
+                    </table>
+
+                    <hr>
+
+                    <h5 class="mb-3"><i class="bi bi-car-front"></i> Información del Vehículo</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <td width="200"><strong>Placa:</strong></td>
+                            <td>{{ reservation.vehicle.license_plate }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tipo:</strong></td>
+                            <td>
+                                {% if reservation.vehicle.vehicle_type == 'CAR' %}
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-car-front"></i> {{ reservation.vehicle.get_vehicle_type_display }}
+                                    </span>
+                                {% elif reservation.vehicle.vehicle_type == 'TRUCK' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-truck"></i> {{ reservation.vehicle.get_vehicle_type_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-bicycle"></i> {{ reservation.vehicle.get_vehicle_type_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if reservation.vehicle.brand %}
+                        <tr>
+                            <td><strong>Marca:</strong></td>
+                            <td>{{ reservation.vehicle.brand }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if reservation.vehicle.model %}
+                        <tr>
+                            <td><strong>Modelo:</strong></td>
+                            <td>{{ reservation.vehicle.model }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if reservation.vehicle.color %}
+                        <tr>
+                            <td><strong>Color:</strong></td>
+                            <td>{{ reservation.vehicle.color }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                {% endif %}
+
+                <hr>
+
+                <h5 class="mb-3"><i class="bi bi-calendar-event"></i> Detalles de la Reserva</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td width="200"><strong>Espacio:</strong></td>
+                        <td>
+                            <span class="badge bg-primary">
+                                Piso {{ reservation.reserved_space.floor.floor_number }} - Espacio {{ reservation.reserved_space.space_number }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fecha/Hora Inicio:</strong></td>
+                        <td><i class="bi bi-calendar-check"></i> {{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fecha/Hora Fin:</strong></td>
+                        <td><i class="bi bi-calendar-x"></i> {{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Duración:</strong></td>
+                        <td>
+                            {% widthratio reservation.end_datetime|timeuntil:reservation.start_datetime 1 1 %} horas aprox.
+                        </td>
+                    </tr>
+                    {% if reservation.notes %}
+                    <tr>
+                        <td><strong>Notas:</strong></td>
+                        <td>{{ reservation.notes }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+
+                <hr>
+
+                <h5 class="mb-3"><i class="bi bi-info-circle"></i> Información Adicional</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td width="200"><strong>Creada por:</strong></td>
+                        <td>{{ reservation.created_by.get_full_name|default:reservation.created_by.username }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fecha de Creación:</strong></td>
+                        <td>{{ reservation.created_at|date:"d/m/Y H:i:s" }}</td>
+                    </tr>
+                    {% if reservation.updated_at != reservation.created_at %}
+                    <tr>
+                        <td><strong>Última Actualización:</strong></td>
+                        <td>{{ reservation.updated_at|date:"d/m/Y H:i:s" }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{% url 'parking:reservation_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                    {% if not reservation.is_cancelled and reservation.end_datetime > now %}
+                        <a href="{% url 'parking:cancel_reservation' reservation.id %}" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Cancelar Reserva
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

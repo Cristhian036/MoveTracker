@@ -1,0 +1,198 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2><i class="bi bi-calendar-check"></i> {{ title }}</h2>
+        <div>
+            <div class="btn-group" role="group">
+                <a href="{% url 'parking:normal_reservation' %}" class="btn btn-info">
+                    <i class="bi bi-calendar-plus"></i> Nueva Reserva Normal
+                </a>
+                <a href="{% url 'parking:quick_reservation' %}" class="btn btn-warning">
+                    <i class="bi bi-lightning-charge"></i> Nueva Reserva Rápida
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-funnel"></i> Filtros
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Buscar</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search }}"
+                               placeholder="Nombre, teléfono, placa...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="type" class="form-label">Tipo de Reserva</label>
+                        <select class="form-control" id="type" name="type">
+                            <option value="">Todas</option>
+                            <option value="normal" {% if reservation_type == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="quick" {% if reservation_type == 'quick' %}selected{% endif %}>Rápida</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Estado</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="">Todos</option>
+                            <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pendiente</option>
+                            <option value="active" {% if status == 'active' %}selected{% endif %}>Confirmada</option>
+                            <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completada</option>
+                            <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Reservas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Total de Reservas: <strong>{{ reservations.count }}</strong>
+            </div>
+            <div class="card-body">
+                {% if reservations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Cliente/Usuario</th>
+                                    <th>Vehículo</th>
+                                    <th>Espacio</th>
+                                    <th>Inicio</th>
+                                    <th>Fin</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in reservations %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'parking:reservation_detail' reservation.id %}">
+                                                #{{ reservation.id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if reservation.is_quick_reservation %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-lightning-charge"></i> Rápida
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-calendar-check"></i> Normal
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if reservation.is_quick_reservation %}
+                                                {{ reservation.customer_name }}<br>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-telephone"></i> {{ reservation.customer_phone }}
+                                                </small>
+                                            {% else %}
+                                                {{ reservation.vehicle.owner.get_full_name|default:reservation.vehicle.owner.username }}<br>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-person"></i> {{ reservation.vehicle.owner.username }}
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if reservation.is_quick_reservation %}
+                                                <strong>{{ reservation.vehicle_plate }}</strong><br>
+                                                <small class="text-muted">{{ reservation.get_vehicle_type_temp_display }}</small>
+                                            {% else %}
+                                                <strong>{{ reservation.vehicle.license_plate }}</strong><br>
+                                                <small class="text-muted">{{ reservation.vehicle.get_vehicle_type_display }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            Piso {{ reservation.reserved_space.floor.floor_number }}<br>
+                                            <small class="text-muted">Espacio {{ reservation.reserved_space.space_number }}</small>
+                                        </td>
+                                        <td>{{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if reservation.is_cancelled %}
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-x-circle"></i> Cancelada
+                                                </span>
+                                            {% elif reservation.start_datetime > now %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-clock"></i> Pendiente
+                                                </span>
+                                            {% elif reservation.end_datetime < now %}
+                                                <span class="badge bg-dark">
+                                                    <i class="bi bi-check-circle"></i> Completada
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-play-circle"></i> Activa
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'parking:reservation_detail' reservation.id %}" 
+                                                   class="btn btn-outline-primary"
+                                                   title="Ver Detalle">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if not reservation.is_cancelled and reservation.end_datetime > now %}
+                                                    <a href="{% url 'parking:cancel_reservation' reservation.id %}" 
+                                                       class="btn btn-outline-danger"
+                                                       title="Cancelar">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No se encontraron reservas.</p>
+                        <div class="mt-3">
+                            <a href="{% url 'parking:normal_reservation' %}" class="btn btn-info me-2">
+                                <i class="bi bi-calendar-plus"></i> Nueva Reserva Normal
+                            </a>
+                            <a href="{% url 'parking:quick_reservation' %}" class="btn btn-warning">
+                                <i class="bi bi-lightning-charge"></i> Nueva Reserva Rápida
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

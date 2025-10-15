@@ -1,127 +1,572 @@
 {% load static %}
-{% load crispy_forms_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="title" content="project">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="language" content="English">
-  <meta name="author" content="vinayak sharma">
+  <meta name="title" content="MoveTracker - Sistema de Estacionamiento">
+  <meta name="description" content="MoveTracker - Sistema inteligente de gestión de estacionamiento">
+  <meta name="author" content="MoveTracker">
 
-  <title>{{title}}</title>
+  <title>MoveTracker - Sistema de Estacionamiento</title>
 
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- bootstrap file -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-  <!-- bootstrap file-->
-
-  <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-
-  <!-- main css -->
-  <link rel="stylesheet" type="text/css" href="{% static 'user/index.css' %}" />
-
-  <!-- Custom styles for logout button -->
   <style>
-    .logout-btn {
-      background: none;
-      border: none;
-      color: #9d9d9d;
-      cursor: pointer;
-      padding: 15px;
-      font-size: 14px;
-      display: block;
-      width: 100%;
-      text-align: left;
-    }
-    .logout-btn:hover {
-      color: #fff;
-      background-color: transparent;
-    }
-    .navbar-inverse .navbar-nav > li > form {
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Navbar Styles */
+    .navbar-custom {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: white !important;
+    }
+
+    .navbar-custom .nav-link {
+      color: rgba(255,255,255,0.9) !important;
+      font-weight: 500;
+      margin: 0 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-custom .nav-link:hover {
+      color: white !important;
+      transform: translateY(-2px);
+    }
+
+    .btn-custom-login {
+      background-color: white;
+      color: #667eea;
+      border: 2px solid white;
+      font-weight: 600;
+      padding: 0.5rem 1.5rem;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-custom-login:hover {
+      background-color: transparent;
+      color: white;
+    }
+
+    .btn-custom-signup {
+      background-color: transparent;
+      color: white;
+      border: 2px solid white;
+      font-weight: 600;
+      padding: 0.5rem 1.5rem;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-custom-signup:hover {
+      background-color: white;
+      color: #667eea;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      min-height: 90vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      position: relative;
+      overflow: hidden;
+      padding: 4rem 0;
+    }
+
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.3;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 1s ease;
+    }
+
+    .hero-subtitle {
+      font-size: 1.3rem;
+      font-weight: 300;
+      margin-bottom: 2rem;
+      opacity: 0.95;
+      animation: fadeInUp 1s ease 0.2s both;
+    }
+
+    .hero-buttons {
+      animation: fadeInUp 1s ease 0.4s both;
+    }
+
+    .btn-hero-primary {
+      background-color: white;
+      color: #667eea;
+      border: none;
+      font-weight: 600;
+      padding: 1rem 2.5rem;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .btn-hero-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      color: #667eea;
+    }
+
+    .btn-hero-secondary {
+      background-color: transparent;
+      color: white;
+      border: 2px solid white;
+      font-weight: 600;
+      padding: 1rem 2.5rem;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-hero-secondary:hover {
+      background-color: white;
+      color: #667eea;
+      transform: translateY(-3px);
+    }
+
+    .hero-image {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    /* Features Section */
+    .features-section {
+      padding: 5rem 0;
+      background-color: #f8f9fa;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: 15px;
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0,0,0,0.05);
+      height: 100%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+
+    .feature-icon {
+      font-size: 3.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #2d3748;
+    }
+
+    .feature-text {
+      color: #718096;
+      line-height: 1.7;
+    }
+
+    /* Stats Section */
+    .stats-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4rem 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 5rem 0;
+      background-color: #2d3748;
+      color: white;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-text {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+
+    /* Footer */
+    .footer {
+      background-color: #1a202c;
+      color: white;
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: #764ba2;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      .hero-subtitle {
+        font-size: 1.1rem;
+      }
+      .stat-number {
+        font-size: 2rem;
+      }
     }
   </style>
-
-
-  <!-- message here -->
-
-  {% if messages %}
-  {% for message in messages %}
-
-  <script>
-    alert("{{ message }}");
-  </script>
-
-  {% endfor %}
-  {% endif %}
-
-  <!--_______________________________________________-->
-
-
-
 </head>
 
-<body class="container-fluid">
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'index' %}">
+        <i class="bi bi-truck-front"></i> MoveTracker
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" href="#features">
+              <i class="bi bi-star-fill"></i> Características
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#stats">
+              <i class="bi bi-graph-up"></i> Estadísticas
+            </a>
+          </li>
+          
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'parking:dashboard' %}">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-custom-login ms-2">
+                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+              </button>
+            </form>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="btn btn-custom-signup ms-2" href="{% url 'register' %}">
+              <i class="bi bi-person-plus"></i> Registrarse
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-custom-login ms-2" href="{% url 'login' %}">
+              <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-
-  <header class="row">
-
-    <!-- navbar-->
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <button class="navbar-toggle" data-toggle="collapse" data-target="#mainNavBar">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" class="styleheader" href="{% url "index" %}">project</a>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6 hero-content">
+          {% if user.is_authenticated %}
+          <h1 class="hero-title">¡Bienvenido de vuelta, {{ user.first_name|default:user.username }}!</h1>
+          <p class="hero-subtitle">
+            Gestiona tu estacionamiento de manera inteligente y eficiente
+          </p>
+          <div class="hero-buttons">
+            <a href="{% url 'parking:dashboard' %}" class="btn btn-hero-primary me-3">
+              <i class="bi bi-speedometer2"></i> Ir al Dashboard
+            </a>
+            <a href="{% url 'parking:vehicle_list' %}" class="btn btn-hero-secondary">
+              <i class="bi bi-car-front"></i> Ver Vehículos
+            </a>
+          </div>
+          {% else %}
+          <h1 class="hero-title">Sistema Inteligente de Estacionamiento</h1>
+          <p class="hero-subtitle">
+            Gestiona espacios, reservas y vehículos de forma moderna y eficiente. 
+            Control total desde cualquier dispositivo.
+          </p>
+          <div class="hero-buttons">
+            <a href="{% url 'login' %}" class="btn btn-hero-primary me-3">
+              <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-hero-secondary">
+              <i class="bi bi-person-plus"></i> Crear Cuenta
+            </a>
+          </div>
+          {% endif %}
         </div>
-        <div class="collapse navbar-collapse" id="mainNavBar">
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="{% url "index" %}">Home</a></li>
-
-            {% if user.is_authenticated %}
-            <li>
-              <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">
-                  <span class="glyphicon glyphicon-log-out"></span> &nbsp; Logout
-                </button>
-              </form>
-            </li>
-            {% else %}
-            <li><a href="{% url "register" %}"><span class="glyphicon glyphicon-user"></span> &nbsp; Sign up</a></li>
-            <li><a href="{% url "login" %}"><span class="glyphicon glyphicon-log-in"></span> &nbsp; Log in</a></li>
-            {% endif %}
-
-          </ul>
+        <div class="col-lg-6 text-center hero-image">
+          <i class="bi bi-building" style="font-size: 20rem; opacity: 0.2;"></i>
         </div>
       </div>
-    </nav>
-  </header>
-  <br/>
-  <br>
-  <br>
-  <div class="row">
-    {% block start %}
-    {% if user.is_authenticated %}
-    <center><h1>Bienvenidos, </h1></center>
-    {% else %}
-    <center><h1>Inicia sesión, por favor . . .</h1></center>
-    {% endif %}
-    {% endblock %}
-  </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="text-center mb-5">
+        <h2 class="display-4 fw-bold">Características Principales</h2>
+        <p class="lead text-muted">Todo lo que necesitas para gestionar tu estacionamiento</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-p-circle-fill"></i>
+            </div>
+            <h3 class="feature-title">Gestión de Espacios</h3>
+            <p class="feature-text">
+              Administra múltiples pisos y espacios de estacionamiento. 
+              Visualiza disponibilidad en tiempo real.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-calendar-check"></i>
+            </div>
+            <h3 class="feature-title">Sistema de Reservas</h3>
+            <p class="feature-text">
+              Reservas normales y rápidas. Control total de horarios 
+              y disponibilidad de espacios.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-car-front"></i>
+            </div>
+            <h3 class="feature-title">Registro de Vehículos</h3>
+            <p class="feature-text">
+              Base de datos completa de vehículos. Soporte para autos, 
+              motos y camionetas.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <h3 class="feature-title">Gestión de Usuarios</h3>
+            <p class="feature-text">
+              Roles y permisos. Administradores, trabajadores y 
+              usuarios con acceso controlado.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h3 class="feature-title">Reportes y Estadísticas</h3>
+            <p class="feature-text">
+              Dashboard con métricas en tiempo real. 
+              Ocupación, ingresos y tendencias.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <h3 class="feature-title">Seguridad y Control</h3>
+            <p class="feature-text">
+              Sistema seguro con autenticación. Auditoría 
+              y control de accesos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-number">
+              <i class="bi bi-infinity"></i>
+            </div>
+            <div class="stat-label">Espacios Configurables</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Disponibilidad</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Seguro</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-number">
+              <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <div class="stat-label">Rápido y Eficiente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  {% if not user.is_authenticated %}
+  <section class="cta-section">
+    <div class="container">
+      <h2 class="cta-title">¿Listo para comenzar?</h2>
+      <p class="cta-text">Únete ahora y revoluciona la gestión de tu estacionamiento</p>
+      <a href="{% url 'register' %}" class="btn btn-hero-primary btn-lg">
+        <i class="bi bi-rocket-takeoff"></i> Comenzar Ahora
+      </a>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <p class="mb-2">
+            <i class="bi bi-truck-front"></i> <strong>MoveTracker</strong> - Sistema de Gestión de Estacionamiento
+          </p>
+          <p class="mb-0">
+            &copy; 2025 Todos los derechos reservados | 
+            <a href="#">Términos</a> | 
+            <a href="#">Privacidad</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Messages -->
+  {% if messages %}
+  <script>
+    {% for message in messages %}
+    alert("{{ message }}");
+    {% endfor %}
+  </script>
+  {% endif %}
 </body>
 
 </html>

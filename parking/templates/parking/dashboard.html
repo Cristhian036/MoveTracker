@@ -1,0 +1,230 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-speedometer2"></i> {{ title }}</h2>
+        <p class="text-muted">Vista general del sistema de estacionamiento</p>
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <h3>{{ available_spaces }}</h3>
+            <p><i class="bi bi-p-circle"></i> Espacios Disponibles</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card danger">
+            <h3>{{ occupied_spaces }}</h3>
+            <p><i class="bi bi-p-circle-fill"></i> Espacios Ocupados</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <h3>{{ active_reservations }}</h3>
+            <p><i class="bi bi-calendar-check"></i> Reservas Activas</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <h3>{{ total_vehicles }}</h3>
+            <p><i class="bi bi-car-front"></i> Vehículos Registrados</p>
+        </div>
+    </div>
+</div>
+
+<!-- Información del estacionamiento -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-building"></i> Configuración del Estacionamiento
+            </div>
+            <div class="card-body">
+                {% if config %}
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Total de Pisos:</strong></td>
+                            <td>{{ config.total_floors }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Espacios por Piso:</strong></td>
+                            <td>{{ config.spaces_per_floor }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total de Espacios:</strong></td>
+                            <td>{{ total_spaces }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ocupación:</strong></td>
+                            <td>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar {% if occupancy_percentage > 80 %}bg-danger{% elif occupancy_percentage > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ occupancy_percentage }}%;">
+                                        {{ occupancy_percentage|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                {% else %}
+                    <p class="text-muted">No hay configuración activa del estacionamiento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Estadísticas Adicionales
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Reservas Pendientes:</strong></td>
+                        <td><span class="badge bg-info">{{ pending_reservations }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reservas Activas:</strong></td>
+                        <td><span class="badge bg-success">{{ active_reservations }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Espacios Disponibles:</strong></td>
+                        <td><span class="badge bg-primary">{{ available_spaces }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vehículos Totales:</strong></td>
+                        <td><span class="badge bg-secondary">{{ total_vehicles }}</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservas Recientes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history"></i> Reservas Recientes</span>
+                <a href="{% url 'parking:reservation_list' %}" class="btn btn-sm btn-primary">
+                    Ver Todas <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_reservations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Cliente/Vehículo</th>
+                                    <th>Espacio</th>
+                                    <th>Inicio</th>
+                                    <th>Fin</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in recent_reservations %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'parking:reservation_detail' reservation.id %}">
+                                                #{{ reservation.id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if reservation.is_quick_reservation %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-lightning-charge"></i> Rápida
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-calendar-check"></i> Normal
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if reservation.is_quick_reservation %}
+                                                {{ reservation.customer_name }}<br>
+                                                <small class="text-muted">{{ reservation.vehicle_plate }}</small>
+                                            {% else %}
+                                                {{ reservation.vehicle.owner.get_full_name|default:reservation.vehicle.owner.username }}<br>
+                                                <small class="text-muted">{{ reservation.vehicle.license_plate }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>Piso {{ reservation.reserved_space.floor.floor_number }} - {{ reservation.reserved_space.space_number }}</td>
+                                        <td>{{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if reservation.is_cancelled %}
+                                                <span class="badge bg-danger">Cancelada</span>
+                                            {% elif reservation.start_datetime > now %}
+                                                <span class="badge bg-secondary">Pendiente</span>
+                                            {% elif reservation.end_datetime < now %}
+                                                <span class="badge bg-dark">Completada</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Activa</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">No hay reservas registradas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning-charge-fill"></i> Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'parking:add_vehicle' %}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-plus-circle"></i><br>
+                            Añadir Vehículo
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'parking:normal_reservation' %}" class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-calendar-plus"></i><br>
+                            Nueva Reserva Normal
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'parking:quick_reservation' %}" class="btn btn-outline-warning w-100 py-3">
+                            <i class="bi bi-lightning-charge"></i><br>
+                            Nueva Reserva Rápida
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'parking:vehicle_list' %}" class="btn btn-outline-secondary w-100 py-3">
+                            <i class="bi bi-list-ul"></i><br>
+                            Ver Vehículos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
