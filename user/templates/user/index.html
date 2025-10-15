@@ -27,7 +27,29 @@
 
 
   <!-- main css -->
-  <link rel="stylesheet" type="text/css" href="{% static "index.css" %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'user/index.css' %}" />
+
+  <!-- Custom styles for logout button -->
+  <style>
+    .logout-btn {
+      background: none;
+      border: none;
+      color: #9d9d9d;
+      cursor: pointer;
+      padding: 15px;
+      font-size: 14px;
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+    .logout-btn:hover {
+      color: #fff;
+      background-color: transparent;
+    }
+    .navbar-inverse .navbar-nav > li > form {
+      margin: 0;
+    }
+  </style>
 
 
   <!-- message here -->
@@ -70,7 +92,14 @@
             <li><a href="{% url "index" %}">Home</a></li>
 
             {% if user.is_authenticated %}
-            <li><a href="{% url "logout" %}"><span class="glyphicon glyphicon-log-out"></span> &nbsp; Logout</a></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                  <span class="glyphicon glyphicon-log-out"></span> &nbsp; Logout
+                </button>
+              </form>
+            </li>
             {% else %}
             <li><a href="{% url "register" %}"><span class="glyphicon glyphicon-user"></span> &nbsp; Sign up</a></li>
             <li><a href="{% url "login" %}"><span class="glyphicon glyphicon-log-in"></span> &nbsp; Log in</a></li>
