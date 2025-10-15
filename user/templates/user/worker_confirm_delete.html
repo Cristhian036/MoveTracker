@@ -1,0 +1,57 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-exclamation-triangle text-danger"></i> {{ title }}</h2>
+        <p class="text-muted">Confirmar eliminación de trabajador</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle"></i> Advertencia
+            </div>
+            <div class="card-body">
+                <p class="mb-4">
+                    ¿Está seguro de que desea eliminar al trabajador 
+                    <strong>{{ worker.username }}</strong>?
+                </p>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Información del trabajador:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Usuario:</strong> {{ worker.username }}</li>
+                        <li><strong>Nombre:</strong> {{ worker.first_name }} {{ worker.last_name }}</li>
+                        <li><strong>Email:</strong> {{ worker.email }}</li>
+                        <li><strong>Registrado:</strong> {{ worker.date_joined|date:"d/m/Y H:i" }}</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <strong>Atención:</strong> Esta acción no se puede deshacer. 
+                    El usuario perderá acceso al sistema inmediatamente.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'worker_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Confirmar Eliminación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

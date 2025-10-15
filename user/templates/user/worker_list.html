@@ -1,0 +1,91 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-people-fill"></i> {{ title }}</h2>
+        <p class="text-muted">Gestión de trabajadores del sistema</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'worker_create' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Nuevo Trabajador
+        </a>
+    </div>
+</div>
+
+<!-- Estadística -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <h3>{{ total_workers }}</h3>
+            <p><i class="bi bi-people"></i> Total de Trabajadores</p>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de trabajadores -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list"></i> Trabajadores Registrados
+    </div>
+    <div class="card-body">
+        {% if workers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th>Estado</th>
+                            <th>Fecha Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for worker in workers %}
+                        <tr>
+                            <td>{{ worker.id }}</td>
+                            <td>
+                                <strong>{{ worker.username }}</strong>
+                            </td>
+                            <td>
+                                {% if worker.first_name or worker.last_name %}
+                                    {{ worker.first_name }} {{ worker.last_name }}
+                                {% else %}
+                                    <span class="text-muted">No especificado</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ worker.email|default:"No especificado" }}</td>
+                            <td>
+                                {% if worker.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ worker.date_joined|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'worker_delete' worker.pk %}" 
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('¿Está seguro de eliminar este trabajador?')">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No hay trabajadores registrados.
+                <a href="{% url 'worker_create' %}">Crear el primero</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

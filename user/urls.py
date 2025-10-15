@@ -20,5 +20,8 @@ from . import views
 from django.conf.urls.static import static
 
 urlpatterns = [
-         path('',views.index,name='index'),
+    path('', views.index, name='index'),
+    path('workers/', views.worker_list, name='worker_list'),
+    path('workers/create/', views.worker_create, name='worker_create'),
+    path('workers/<int:pk>/delete/', views.worker_delete, name='worker_delete'),
 ]

@@ -1,0 +1,128 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2><i class="bi bi-list-ul"></i> {{ title }}</h2>
+        <div>
+            <a href="{% url 'parking:add_vehicle' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Añadir Vehículo
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-funnel"></i> Filtros
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Buscar</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search }}"
+                               placeholder="Placa, marca, modelo, propietario...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="type" class="form-label">Tipo de Vehículo</label>
+                        <select class="form-control" id="type" name="type">
+                            <option value="">Todos</option>
+                            {% for code, name in vehicle_types %}
+                                <option value="{{ code }}" {% if vehicle_type == code %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Vehículos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Total de Vehículos: <strong>{{ vehicles.count }}</strong>
+            </div>
+            <div class="card-body">
+                {% if vehicles %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Placa</th>
+                                    <th>Tipo</th>
+                                    <th>Marca</th>
+                                    <th>Modelo</th>
+                                    <th>Color</th>
+                                    <th>Propietario</th>
+                                    <th>Registrado Por</th>
+                                    <th>Fecha Registro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vehicle in vehicles %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ vehicle.license_plate }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if vehicle.vehicle_type == 'CAR' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-car-front"></i> {{ vehicle.get_vehicle_type_display }}
+                                                </span>
+                                            {% elif vehicle.vehicle_type == 'TRUCK' %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-truck"></i> {{ vehicle.get_vehicle_type_display }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-bicycle"></i> {{ vehicle.get_vehicle_type_display }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ vehicle.brand|default:"-" }}</td>
+                                        <td>{{ vehicle.model|default:"-" }}</td>
+                                        <td>{{ vehicle.color|default:"-" }}</td>
+                                        <td>
+                                            <i class="bi bi-person"></i>
+                                            {{ vehicle.owner.get_full_name|default:vehicle.owner.username }}
+                                        </td>
+                                        <td>{{ vehicle.registered_by.username|default:"-" }}</td>
+                                        <td>{{ vehicle.registered_at|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No se encontraron vehículos.</p>
+                        <a href="{% url 'parking:add_vehicle' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Añadir Primer Vehículo
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
