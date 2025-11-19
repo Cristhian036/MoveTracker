@@ -207,6 +207,14 @@
                         <i class="bi bi-lightning-charge"></i> Reserva Rápida
                     </a>
                     
+                    <hr>
+                    <small class="text-muted px-3">GESTIÓN DE SALIDAS</small>
+                    
+                    <a class="nav-link {% if request.resolver_match.url_name == 'assignment_list' %}active{% endif %}" 
+                       href="{% url 'parking:assignment_list' %}">
+                        <i class="bi bi-car-front-fill"></i> Vehículos Estacionados
+                    </a>
+                    
                     {% if user.is_superuser or user.groups.all.0.name == 'admin' %}
                     <hr>
                     <small class="text-muted px-3">ADMINISTRACIÓN</small>

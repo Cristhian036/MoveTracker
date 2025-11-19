@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boleta de Estacionamiento - {{ assignment.receipt_number }}</title>
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 20px;
+            }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 80mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .receipt {
+            background: white;
+            padding: 20px;
+            border: 2px dashed #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .header p {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .section {
+            margin: 15px 0;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
+        }
+        
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 13px;
+        }
+        
+        .row .label {
+            font-weight: normal;
+        }
+        
+        .row .value {
+            font-weight: bold;
+        }
+        
+        .total {
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            margin: 15px 0;
+            padding: 10px 0;
+            text-align: center;
+        }
+        
+        .total .amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        
+        .barcode {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 10px;
+            font-family: 'Libre Barcode 128', cursive;
+        }
+        
+        .print-button {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .print-button button {
+            padding: 10px 30px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .print-button button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button no-print">
+        <button onclick="window.print()">🖨️ Imprimir Boleta</button>
+        <button onclick="window.close()" style="background: #6c757d; margin-left: 10px;">❌ Cerrar</button>
+    </div>
+    
+    <div class="receipt">
+        <div class="header">
+            <h1>MOVETRACKER</h1>
+            <p>Sistema de Estacionamiento</p>
+            <p>-------------------------</p>
+            <p><strong>BOLETA DE PAGO</strong></p>
+            <p>{{ assignment.receipt_number }}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">DATOS DEL VEHÍCULO</div>
+            <div class="row">
+                <span class="label">Placa:</span>
+                <span class="value">{{ assignment.vehicle.license_plate }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Tipo:</span>
+                <span class="value">{{ assignment.vehicle.get_vehicle_type_display }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Espacio:</span>
+                <span class="value">{{ assignment.parking_space.full_code }}</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">TIEMPO DE ESTACIONAMIENTO</div>
+            <div class="row">
+                <span class="label">Entrada:</span>
+                <span class="value">{{ assignment.entry_time|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Salida:</span>
+                <span class="value">{{ assignment.exit_time|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Duración:</span>
+                <span class="value">{{ hours_parked }} hora(s)</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">DETALLE DE PAGO</div>
+            <div class="row">
+                <span class="label">Tarifa/Hora:</span>
+                <span class="value">S/ {{ tariff_amount }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Horas:</span>
+                <span class="value">{{ hours_parked }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Método:</span>
+                <span class="value">{{ assignment.get_payment_method_display }}</span>
+            </div>
+        </div>
+        
+        <div class="total">
+            <p style="margin: 0; font-size: 14px;">TOTAL A PAGAR</p>
+            <p class="amount" style="margin: 5px 0;">S/ {{ assignment.total_cost|floatformat:2 }}</p>
+        </div>
+        
+        <div class="section">
+            <div class="row">
+                <span class="label">Fecha Emisión:</span>
+                <span class="value">{{ assignment.updated_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Atendido por:</span>
+                <span class="value">{{ assignment.completed_by.username|default:"Sistema" }}</span>
+            </div>
+        </div>
+        
+        {% if assignment.notes %}
+        <div class="section">
+            <div class="section-title">OBSERVACIONES</div>
+            <p style="font-size: 12px; margin: 5px 0;">{{ assignment.notes }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="barcode">
+            <p style="font-size: 24px; letter-spacing: 2px;">||||| {{ assignment.receipt_number }} |||||</p>
+        </div>
+        
+        <div class="footer">
+            <p>¡Gracias por su preferencia!</p>
+            <p>Conserve esta boleta</p>
+            <p>{{ now|date:"d/m/Y H:i:s" }}</p>
+        </div>
+    </div>
+</body>
+</html>
