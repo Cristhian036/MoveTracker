@@ -23,17 +23,20 @@ class VehicleForm(forms.ModelForm):
             }),
             'brand': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Toyota, Honda, etc.'
+                'placeholder': 'Toyota, Honda, etc. (opcional)',
+                'required': False
             }),
             'model': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Corolla, Civic, etc.'
+                'placeholder': 'Corolla, Civic, etc. (opcional)',
+                'required': False
             }),
             'year': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': '2020',
+                'placeholder': '2020 (opcional)',
                 'min': 1900,
-                'max': 2100
+                'max': 2100,
+                'required': False
             }),
             'color': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -47,14 +50,17 @@ class VehicleForm(forms.ModelForm):
         labels = {
             'license_plate': 'Placa del Vehículo',
             'vehicle_type': 'Tipo de Vehículo',
-            'brand': 'Marca',
-            'model': 'Modelo',
-            'year': 'Año',
+            'brand': 'Marca (opcional)',
+            'model': 'Modelo (opcional)',
+            'year': 'Año (opcional)',
             'color': 'Color',
             'owner': 'Propietario',
         }
         help_texts = {
             'license_plate': 'Ingrese la placa en formato válido (ej: ABC-123)',
+            'brand': 'Marca del vehículo (campo opcional)',
+            'model': 'Modelo del vehículo (campo opcional)',
+            'year': 'Año de fabricación (campo opcional)',
             'owner': 'Seleccione el usuario propietario del vehículo',
         }
 
@@ -97,7 +103,7 @@ class NormalReservationForm(forms.ModelForm):
     
     class Meta:
         model = ParkingReservation
-        fields = ['vehicle', 'parking_space', 'reservation_date', 'duration_hours', 'notes']
+        fields = ['vehicle', 'parking_space', 'reservation_date', 'duration_minutes', 'notes']
         widgets = {
             'vehicle': forms.Select(attrs={
                 'class': 'form-control',
@@ -112,11 +118,12 @@ class NormalReservationForm(forms.ModelForm):
                 'type': 'datetime-local',
                 'required': True
             }),
-            'duration_hours': forms.NumberInput(attrs={
+            'duration_minutes': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': '1',
-                'value': '1',
-                'required': True
+                'value': '60',
+                'required': True,
+                'placeholder': 'Ej: 60 (minutos)'
             }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -128,7 +135,7 @@ class NormalReservationForm(forms.ModelForm):
             'vehicle': 'Vehículo',
             'parking_space': 'Espacio de Estacionamiento',
             'reservation_date': 'Fecha/Hora de Reserva',
-            'duration_hours': 'Duración (horas)',
+            'duration_minutes': 'Duración (minutos)',
             'notes': 'Notas',
         }
 
@@ -154,7 +161,7 @@ class QuickReservationForm(forms.ModelForm):
         fields = [
             'customer_name', 'customer_phone', 'customer_email',
             'vehicle_plate', 'vehicle_type_temp',
-            'parking_space', 'reservation_date', 'duration_hours', 'notes'
+            'parking_space', 'reservation_date', 'duration_minutes', 'notes'
         ]
         widgets = {
             'customer_name': forms.TextInput(attrs={
@@ -189,11 +196,12 @@ class QuickReservationForm(forms.ModelForm):
                 'type': 'datetime-local',
                 'required': True
             }),
-            'duration_hours': forms.NumberInput(attrs={
+            'duration_minutes': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': '1',
-                'value': '1',
-                'required': True
+                'value': '60',
+                'required': True,
+                'placeholder': 'Ej: 60 (minutos)'
             }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -209,7 +217,7 @@ class QuickReservationForm(forms.ModelForm):
             'vehicle_type_temp': 'Tipo de Vehículo',
             'parking_space': 'Espacio de Estacionamiento',
             'reservation_date': 'Fecha/Hora de Reserva',
-            'duration_hours': 'Duración (horas)',
+            'duration_minutes': 'Duración (minutos)',
             'notes': 'Notas',
         }
 

@@ -3,7 +3,8 @@ from django.contrib import messages
 from django.contrib.auth import authenticate,login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from .models import User
 from .forms import UserRegisterForm, WorkerCreateForm
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
@@ -86,7 +87,7 @@ def is_admin(user):
         return False
     if user.is_superuser:
         return True
-    return user.groups.filter(name='admin').exists()
+    return user.groups.filter(name='administrador').exists()
 
 
 @login_required
