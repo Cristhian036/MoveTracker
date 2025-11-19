@@ -185,6 +185,10 @@
                        href="{% url 'parking:add_vehicle' %}">
                         <i class="bi bi-plus-circle"></i> Añadir Vehículo
                     </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'assign_vehicle' %}active{% endif %}" 
+                       href="{% url 'parking:assign_vehicle' %}">
+                        <i class="bi bi-person-badge"></i> Asignar Vehículo
+                    </a>
 
                     
                     <hr>
@@ -210,6 +214,10 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'worker_list' %}active{% endif %}" 
                        href="{% url 'worker_list' %}">
                         <i class="bi bi-people-fill"></i> Trabajadores
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'space_configuration' %}active{% endif %}" 
+                       href="{% url 'parking:space_configuration' %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Espacios
                     </a>
                     {% endif %}
                 </div>

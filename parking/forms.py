@@ -1,8 +1,35 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Vehicle, ParkingReservation, VehicleType
+from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration
 
 User = get_user_model()
+
+
+class ParkingConfigurationForm(forms.ModelForm):
+    """Formulario para configurar el estacionamiento"""
+    class Meta:
+        model = ParkingConfiguration
+        fields = ['total_floors', 'spaces_per_floor']
+        widgets = {
+            'total_floors': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'placeholder': 'Ej: 3'
+            }),
+            'spaces_per_floor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'placeholder': 'Ej: 20'
+            }),
+        }
+        labels = {
+            'total_floors': 'Número de Pisos',
+            'spaces_per_floor': 'Espacios por Piso',
+        }
+        help_texts = {
+            'total_floors': 'Cantidad total de niveles del estacionamiento',
+            'spaces_per_floor': 'Cantidad de espacios disponibles en cada nivel',
+        }
 
 
 class VehicleForm(forms.ModelForm):
@@ -140,7 +167,8 @@ class NormalReservationForm(forms.ModelForm):
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
 
@@ -192,6 +220,9 @@ class QuickReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Marcar la instancia como reserva rápida para pasar validaciones del modelo
+        self.instance.is_quick_reservation = True
+        
         # Campos obligatorios según requerimiento
         self.fields['vehicle_type_temp'].required = True
         self.fields['parking_space'].required = True
@@ -207,6 +238,7 @@ class QuickReservationForm(forms.ModelForm):
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"

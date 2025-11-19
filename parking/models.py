@@ -528,6 +528,10 @@ class ParkingReservation(models.Model):
         # Si no tiene usuario ni vehículo, marcar como reserva rápida
         if not self.user and not self.vehicle:
             self.is_quick_reservation = True
+            
+        # Si es reserva normal y tiene vehículo pero no usuario, asignar el dueño del vehículo
+        if not self.is_quick_reservation and self.vehicle and not self.user:
+            self.user = self.vehicle.owner
         
         # Validar antes de guardar
         self.clean()
@@ -564,3 +568,12 @@ class ParkingReservation(models.Model):
             if self.vehicle:
                 return f"{self.vehicle.license_plate} - {self.vehicle.full_description}"
             return "Sin vehículo"
+    
+    @property
+    def duration_formatted(self):
+        """Retorna la duración en formato Xh Ym"""
+        hours = self.duration_minutes // 60
+        minutes = self.duration_minutes % 60
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
