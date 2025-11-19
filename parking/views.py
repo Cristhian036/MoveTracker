@@ -183,6 +183,25 @@ def quick_reservation(request):
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def reservation_list(request):
     """Vista para listar todas las reservas"""
+    # Actualizar duración de reservas activas/pendientes
+    now = timezone.now()
+    active_reservations = ParkingReservation.objects.filter(
+        status__in=[
+            ParkingReservation.ReservationStatus.PENDING,
+            ParkingReservation.ReservationStatus.CONFIRMED
+        ]
+    )
+    
+    for reservation in active_reservations:
+        # Calcular minutos transcurridos desde la fecha de reserva hasta ahora
+        # Si la fecha de reserva es futura, la duración será 0 o negativa (lo manejamos como 0)
+        if reservation.reservation_date <= now:
+            delta = now - reservation.reservation_date
+            minutes = int(delta.total_seconds() / 60)
+            if minutes != reservation.duration_minutes:
+                reservation.duration_minutes = minutes
+                reservation.save(update_fields=['duration_minutes'])
+
     reservations = ParkingReservation.objects.select_related(
         'vehicle', 'vehicle__owner', 'parking_space', 'parking_space__floor', 'created_by'
     ).all().order_by('-created_at')

@@ -185,10 +185,7 @@
                        href="{% url 'parking:add_vehicle' %}">
                         <i class="bi bi-plus-circle"></i> Añadir Vehículo
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'assign_vehicle' %}active{% endif %}" 
-                       href="{% url 'parking:assign_vehicle' %}">
-                        <i class="bi bi-person-check"></i> Asignar Vehículo
-                    </a>
+
                     
                     <hr>
                     <small class="text-muted px-3">RESERVAS</small>
