@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
-from .models import Vehicle, ParkingReservation, ParkingSpace, VehicleType
+from .models import Vehicle, ParkingReservation, ParkingSpace, VehicleType, ParkingConfiguration, ParkingFloor
 from .forms import (
     VehicleForm, AssignVehicleForm, 
-    NormalReservationForm, QuickReservationForm
+    NormalReservationForm, QuickReservationForm,
+    ParkingConfigurationForm
 )
 
 
@@ -183,6 +184,25 @@ def quick_reservation(request):
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def reservation_list(request):
     """Vista para listar todas las reservas"""
+    # Actualizar duración de reservas activas/pendientes
+    now = timezone.now()
+    active_reservations = ParkingReservation.objects.filter(
+        status__in=[
+            ParkingReservation.ReservationStatus.PENDING,
+            ParkingReservation.ReservationStatus.CONFIRMED
+        ]
+    )
+    
+    for reservation in active_reservations:
+        # Calcular minutos transcurridos desde la fecha de reserva hasta ahora
+        # Si la fecha de reserva es futura, la duración será 0 o negativa (lo manejamos como 0)
+        if reservation.reservation_date <= now:
+            delta = now - reservation.reservation_date
+            minutes = int(delta.total_seconds() / 60)
+            if minutes != reservation.duration_minutes:
+                reservation.duration_minutes = minutes
+                reservation.save(update_fields=['duration_minutes'])
+
     reservations = ParkingReservation.objects.select_related(
         'vehicle', 'vehicle__owner', 'parking_space', 'parking_space__floor', 'created_by'
     ).all().order_by('-created_at')
@@ -336,3 +356,52 @@ def dashboard(request):
         'occupancy_percentage': (occupied_spaces / total_spaces * 100) if total_spaces > 0 else 0,
     }
     return render(request, 'parking/dashboard.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or (u.groups.filter(name='admin').exists()), login_url='user:login')
+def space_configuration(request):
+    """Vista para configurar los espacios del estacionamiento"""
+    # Obtener configuración actual para pre-llenar (si existe)
+    current_config = ParkingConfiguration.objects.filter(is_active=True).first()
+    
+    if request.method == 'POST':
+        # Creamos una nueva instancia siempre, no editamos la anterior
+        form = ParkingConfigurationForm(request.POST)
+        if form.is_valid():
+            # 1. Desactivar espacios y pisos antiguos
+            ParkingSpace.objects.filter(is_active=True).update(is_active=False)
+            ParkingFloor.objects.filter(is_active=True).update(is_active=False)
+            
+            # 2. Guardar nueva configuración
+            new_config = form.save(commit=False)
+            new_config.created_by = request.user
+            new_config.is_active = True
+            new_config.save() # Esto desactivará la configuración anterior automáticamente y disparará los signals para crear pisos/espacios
+            
+            # Nota: La creación de pisos y espacios se maneja automáticamente mediante signals
+            # en parking/signals.py (create_parking_structure y create_floor_spaces)
+            
+            total_spaces = new_config.total_floors * new_config.spaces_per_floor
+            
+            messages.success(
+                request, 
+                f'Configuración actualizada. Se generaron {new_config.total_floors} pisos y {total_spaces} espacios nuevos.'
+            )
+            return redirect('parking:space_configuration')
+    else:
+        # Pre-llenar formulario con valores actuales pero sin vincular a la instancia
+        initial_data = {}
+        if current_config:
+            initial_data = {
+                'total_floors': current_config.total_floors,
+                'spaces_per_floor': current_config.spaces_per_floor
+            }
+        form = ParkingConfigurationForm(initial=initial_data)
+    
+    context = {
+        'form': form,
+        'title': 'Configuración de Espacios',
+        'submit_text': 'Actualizar Configuración'
+    }
+    return render(request, 'parking/space_configuration.html', context)

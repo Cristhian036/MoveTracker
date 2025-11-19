@@ -1,8 +1,35 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Vehicle, ParkingReservation, VehicleType
+from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration
 
 User = get_user_model()
+
+
+class ParkingConfigurationForm(forms.ModelForm):
+    """Formulario para configurar el estacionamiento"""
+    class Meta:
+        model = ParkingConfiguration
+        fields = ['total_floors', 'spaces_per_floor']
+        widgets = {
+            'total_floors': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'placeholder': 'Ej: 3'
+            }),
+            'spaces_per_floor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'placeholder': 'Ej: 20'
+            }),
+        }
+        labels = {
+            'total_floors': 'Número de Pisos',
+            'spaces_per_floor': 'Espacios por Piso',
+        }
+        help_texts = {
+            'total_floors': 'Cantidad total de niveles del estacionamiento',
+            'spaces_per_floor': 'Cantidad de espacios disponibles en cada nivel',
+        }
 
 
 class VehicleForm(forms.ModelForm):
@@ -23,17 +50,20 @@ class VehicleForm(forms.ModelForm):
             }),
             'brand': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Toyota, Honda, etc.'
+                'placeholder': 'Toyota, Honda, etc. (opcional)',
+                'required': False
             }),
             'model': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Corolla, Civic, etc.'
+                'placeholder': 'Corolla, Civic, etc. (opcional)',
+                'required': False
             }),
             'year': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': '2020',
+                'placeholder': '2020 (opcional)',
                 'min': 1900,
-                'max': 2100
+                'max': 2100,
+                'required': False
             }),
             'color': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -47,14 +77,17 @@ class VehicleForm(forms.ModelForm):
         labels = {
             'license_plate': 'Placa del Vehículo',
             'vehicle_type': 'Tipo de Vehículo',
-            'brand': 'Marca',
-            'model': 'Modelo',
-            'year': 'Año',
+            'brand': 'Marca (opcional)',
+            'model': 'Modelo (opcional)',
+            'year': 'Año (opcional)',
             'color': 'Color',
             'owner': 'Propietario',
         }
         help_texts = {
             'license_plate': 'Ingrese la placa en formato válido (ej: ABC-123)',
+            'brand': 'Marca del vehículo (campo opcional)',
+            'model': 'Modelo del vehículo (campo opcional)',
+            'year': 'Año de fabricación (campo opcional)',
             'owner': 'Seleccione el usuario propietario del vehículo',
         }
 
@@ -97,7 +130,7 @@ class NormalReservationForm(forms.ModelForm):
     
     class Meta:
         model = ParkingReservation
-        fields = ['vehicle', 'parking_space', 'reservation_date', 'duration_hours', 'notes']
+        fields = ['vehicle', 'parking_space', 'reservation_date', 'notes']
         widgets = {
             'vehicle': forms.Select(attrs={
                 'class': 'form-control',
@@ -112,12 +145,6 @@ class NormalReservationForm(forms.ModelForm):
                 'type': 'datetime-local',
                 'required': True
             }),
-            'duration_hours': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'value': '1',
-                'required': True
-            }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -128,7 +155,6 @@ class NormalReservationForm(forms.ModelForm):
             'vehicle': 'Vehículo',
             'parking_space': 'Espacio de Estacionamiento',
             'reservation_date': 'Fecha/Hora de Reserva',
-            'duration_hours': 'Duración (horas)',
             'notes': 'Notas',
         }
 
@@ -141,7 +167,7 @@ class NormalReservationForm(forms.ModelForm):
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            is_available=True
+            status=ParkingSpace.SpaceStatus.AVAILABLE
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
 
@@ -154,27 +180,15 @@ class QuickReservationForm(forms.ModelForm):
         fields = [
             'customer_name', 'customer_phone', 'customer_email',
             'vehicle_plate', 'vehicle_type_temp',
-            'parking_space', 'reservation_date', 'duration_hours', 'notes'
+            'parking_space', 'reservation_date', 'notes'
         ]
         widgets = {
-            'customer_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre del cliente',
-                'required': True
-            }),
-            'customer_phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+51 999 999 999',
-                'required': True
-            }),
-            'customer_email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'cliente@ejemplo.com'
-            }),
+            'customer_name': forms.HiddenInput(),
+            'customer_phone': forms.HiddenInput(),
+            'customer_email': forms.HiddenInput(),
             'vehicle_plate': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'ABC-123',
-                'required': True
+                'placeholder': 'ABC-123'
             }),
             'vehicle_type_temp': forms.Select(attrs={
                 'class': 'form-control',
@@ -189,12 +203,6 @@ class QuickReservationForm(forms.ModelForm):
                 'type': 'datetime-local',
                 'required': True
             }),
-            'duration_hours': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'value': '1',
-                'required': True
-            }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -202,22 +210,30 @@ class QuickReservationForm(forms.ModelForm):
             }),
         }
         labels = {
-            'customer_name': 'Nombre del Cliente',
-            'customer_phone': 'Teléfono',
-            'customer_email': 'Email',
             'vehicle_plate': 'Placa del Vehículo',
             'vehicle_type_temp': 'Tipo de Vehículo',
             'parking_space': 'Espacio de Estacionamiento',
             'reservation_date': 'Fecha/Hora de Reserva',
-            'duration_hours': 'Duración (horas)',
             'notes': 'Notas',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Campos obligatorios según requerimiento
+        self.fields['vehicle_type_temp'].required = True
+        self.fields['parking_space'].required = True
+        self.fields['reservation_date'].required = True
+        
+        # Campos opcionales y ocultos
+        self.fields['customer_name'].required = False
+        self.fields['customer_phone'].required = False
+        self.fields['customer_email'].required = False
+        self.fields['vehicle_plate'].required = False
+        self.fields['notes'].required = False
+
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            is_available=True
+            status=ParkingSpace.SpaceStatus.AVAILABLE
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"

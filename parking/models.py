@@ -62,7 +62,7 @@ class ParkingConfiguration(models.Model):
 
 class VehicleTariff(models.Model):
     """
-    Tarifas por tipo de vehículo.
+    Tarifas por tipo de vehículo (calculadas por hora).
     """
     vehicle_type = models.CharField(
         max_length=20,
@@ -70,26 +70,12 @@ class VehicleTariff(models.Model):
         unique=True,
         verbose_name='Tipo de Vehículo'
     )
-    hourly_rate = models.DecimalField(
+    rate_per_hour = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         verbose_name='Tarifa por Hora',
         help_text='Costo por hora de estacionamiento'
-    )
-    daily_rate = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(0)],
-        verbose_name='Tarifa Diaria',
-        help_text='Costo por día de estacionamiento'
-    )
-    monthly_rate = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(0)],
-        verbose_name='Tarifa Mensual',
-        help_text='Costo por mes de estacionamiento'
     )
     is_active = models.BooleanField(default=True, verbose_name='Tarifa Activa')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Creación')
@@ -101,7 +87,7 @@ class VehicleTariff(models.Model):
         ordering = ['vehicle_type']
 
     def __str__(self):
-        return f"{self.get_vehicle_type_display()} - ${self.hourly_rate}/hora"
+        return f"{self.get_vehicle_type_display()} - ${self.rate_per_hour}/hora"
 
 
 class Vehicle(models.Model):
@@ -120,11 +106,26 @@ class Vehicle(models.Model):
         choices=VehicleType.choices,
         verbose_name='Tipo de Vehículo'
     )
-    brand = models.CharField(max_length=50, verbose_name='Marca')
-    model = models.CharField(max_length=50, verbose_name='Modelo')
+    brand = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name='Marca',
+        help_text='Marca del vehículo (opcional)'
+    )
+    model = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name='Modelo',
+        help_text='Modelo del vehículo (opcional)'
+    )
     year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
         verbose_name='Año',
-        validators=[MinValueValidator(1900), MaxValueValidator(2100)]
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+        help_text='Año de fabricación (opcional)'
     )
     color = models.CharField(max_length=30, verbose_name='Color')
     license_plate = models.CharField(
@@ -459,10 +460,11 @@ class ParkingReservation(models.Model):
         verbose_name='Fecha de Reserva',
         help_text='Fecha y hora para la cual se reserva'
     )
-    duration_hours = models.PositiveIntegerField(
-        verbose_name='Duración (horas)',
+    duration_minutes = models.PositiveIntegerField(
+        verbose_name='Duración (minutos)',
         validators=[MinValueValidator(1)],
-        default=1
+        default=60,
+        help_text='Duración de la reserva en minutos'
     )
     
     # Información adicional

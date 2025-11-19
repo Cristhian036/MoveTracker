@@ -41,7 +41,7 @@ class ParkingConfigurationAdmin(admin.ModelAdmin):
 
 @admin.register(VehicleTariff)
 class VehicleTariffAdmin(admin.ModelAdmin):
-    list_display = ['vehicle_type_display', 'hourly_rate', 'daily_rate', 'monthly_rate', 'is_active', 'updated_at']
+    list_display = ['vehicle_type_display', 'rate_per_hour', 'is_active', 'updated_at']
     list_filter = ['is_active', 'vehicle_type']
     search_fields = ['vehicle_type']
     readonly_fields = ['created_at', 'updated_at']
@@ -51,7 +51,7 @@ class VehicleTariffAdmin(admin.ModelAdmin):
             'fields': ('vehicle_type',)
         }),
         ('Tarifas', {
-            'fields': ('hourly_rate', 'daily_rate', 'monthly_rate')
+            'fields': ('rate_per_hour',)
         }),
         ('Estado', {
             'fields': ('is_active',)
@@ -223,7 +223,7 @@ class ParkingAssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(ParkingReservation)
 class ParkingReservationAdmin(admin.ModelAdmin):
-    list_display = ['id', 'reservation_type_badge', 'customer_display', 'vehicle_display', 'parking_space', 'status_badge', 'reservation_date', 'duration_hours', 'created_at']
+    list_display = ['id', 'reservation_type_badge', 'customer_display', 'vehicle_display', 'parking_space', 'status_badge', 'reservation_date', 'duration_minutes', 'created_at']
     list_filter = ['status', 'is_quick_reservation', 'reservation_date', 'created_at', 'vehicle_type_temp']
     search_fields = ['user__username', 'vehicle__license_plate', 'customer_name', 'customer_phone', 'vehicle_plate', 'parking_space__space_number']
     readonly_fields = ['created_at', 'updated_at', 'customer_info', 'vehicle_info']
@@ -254,7 +254,7 @@ class ParkingReservationAdmin(admin.ModelAdmin):
             'fields': ('parking_space', 'status')
         }),
         ('Fecha y Duración', {
-            'fields': ('reservation_date', 'duration_hours')
+            'fields': ('reservation_date', 'duration_minutes')
         }),
         ('Información Adicional', {
             'fields': ('notes', 'created_by')

@@ -18,4 +18,7 @@ urlpatterns = [
     path('reservations/normal/new/', views.normal_reservation, name='normal_reservation'),
     path('reservations/quick/new/', views.quick_reservation, name='quick_reservation'),
     path('reservations/<int:pk>/cancel/', views.cancel_reservation, name='cancel_reservation'),
+    
+    # Configuración
+    path('configuration/spaces/', views.space_configuration, name='space_configuration'),
 ]
