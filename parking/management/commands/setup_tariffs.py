@@ -3,27 +3,21 @@ from parking.models import VehicleTariff, VehicleType
 
 
 class Command(BaseCommand):
-    help = 'Inicializa las tarifas por defecto para los tipos de vehículos'
+    help = 'Inicializa las tarifas por defecto para los tipos de vehículos (por minuto)'
 
     def handle(self, *args, **options):
         tariffs = [
             {
                 'vehicle_type': VehicleType.MOTORCYCLE,
-                'hourly_rate': 2.00,
-                'daily_rate': 15.00,
-                'monthly_rate': 300.00,
+                'rate_per_minute': 0.05,  # $0.05 por minuto ($3.00 por hora)
             },
             {
                 'vehicle_type': VehicleType.CAR,
-                'hourly_rate': 3.00,
-                'daily_rate': 25.00,
-                'monthly_rate': 500.00,
+                'rate_per_minute': 0.10,  # $0.10 por minuto ($6.00 por hora)
             },
             {
                 'vehicle_type': VehicleType.TRUCK,
-                'hourly_rate': 5.00,
-                'daily_rate': 40.00,
-                'monthly_rate': 800.00,
+                'rate_per_minute': 0.15,  # $0.15 por minuto ($9.00 por hora)
             },
         ]
 
@@ -31,9 +25,7 @@ class Command(BaseCommand):
             tariff, created = VehicleTariff.objects.get_or_create(
                 vehicle_type=tariff_data['vehicle_type'],
                 defaults={
-                    'hourly_rate': tariff_data['hourly_rate'],
-                    'daily_rate': tariff_data['daily_rate'],
-                    'monthly_rate': tariff_data['monthly_rate'],
+                    'rate_per_minute': tariff_data['rate_per_minute'],
                     'is_active': True
                 }
             )
@@ -42,7 +34,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.SUCCESS(
                         f'✓ Tarifa creada para {tariff.get_vehicle_type_display()}: '
-                        f'${tariff.hourly_rate}/hora, ${tariff.daily_rate}/día, ${tariff.monthly_rate}/mes'
+                        f'${tariff.rate_per_minute}/minuto (${tariff.rate_per_minute * 60}/hora)'
                     )
                 )
             else:
