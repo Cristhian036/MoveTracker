@@ -1,0 +1,148 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-car-front-fill"></i> {{ title }}</h2>
+        <p class="text-muted">Vehículos actualmente estacionados</p>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-funnel"></i> Filtros
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Buscar</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search }}"
+                               placeholder="Placa, espacio...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="status" class="form-label">Estado</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="">Todos</option>
+                            <option value="active" {% if status == 'active' %}selected{% endif %}>Activos</option>
+                            <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completados</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Asignaciones -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Total de Asignaciones: <strong>{{ assignments.count }}</strong>
+            </div>
+            <div class="card-body">
+                {% if assignments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Vehículo</th>
+                                    <th>Espacio</th>
+                                    <th>Entrada</th>
+                                    <th>Duración</th>
+                                    <th>Costo (S/)</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                    <tr>
+                                        <td>#{{ assignment.id }}</td>
+                                        <td>
+                                            <strong>{{ assignment.vehicle.license_plate }}</strong><br>
+                                            <small class="text-muted">{{ assignment.vehicle.get_vehicle_type_display }}</small>
+                                        </td>
+                                        <td>
+                                            {{ assignment.parking_space.full_code }}<br>
+                                            <small class="text-muted">Piso {{ assignment.parking_space.floor.floor_number }}</small>
+                                        </td>
+                                        <td>{{ assignment.entry_time|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if assignment.status == 'ACTIVE' %}
+                                                {% load parking_extras %}
+                                                {{ assignment.entry_time|time_since_now }}
+                                            {% elif assignment.exit_time %}
+                                                {% load parking_extras %}
+                                                {{ assignment.entry_time|duration_between:assignment.exit_time }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.total_cost %}
+                                                <strong>S/ {{ assignment.total_cost|floatformat:2 }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">Pendiente</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.status == 'ACTIVE' %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-play-circle"></i> Activo
+                                                </span>
+                                            {% elif assignment.status == 'COMPLETED' %}
+                                                <span class="badge bg-dark">
+                                                    <i class="bi bi-check-circle"></i> Completado
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ assignment.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.status == 'ACTIVE' %}
+                                                <a href="{% url 'parking:checkout' assignment.id %}" 
+                                                   class="btn btn-sm btn-warning"
+                                                   title="Registrar Salida">
+                                                    <i class="bi bi-box-arrow-right"></i> Salida
+                                                </a>
+                                            {% elif assignment.receipt_number %}
+                                                <a href="{% url 'parking:print_receipt' assignment.id %}" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   title="Ver Boleta"
+                                                   target="_blank">
+                                                    <i class="bi bi-receipt"></i> Boleta
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-car-front" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No se encontraron asignaciones.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

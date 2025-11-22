@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration
+from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration, ParkingAssignment
 
 User = get_user_model()
 
@@ -167,7 +167,8 @@ class NormalReservationForm(forms.ModelForm):
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
 
@@ -219,6 +220,9 @@ class QuickReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Marcar la instancia como reserva rápida para pasar validaciones del modelo
+        self.instance.is_quick_reservation = True
+        
         # Campos obligatorios según requerimiento
         self.fields['vehicle_type_temp'].required = True
         self.fields['parking_space'].required = True
@@ -234,6 +238,38 @@ class QuickReservationForm(forms.ModelForm):
         # Solo mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
+
+
+class CheckoutForm(forms.ModelForm):
+    """Formulario para registrar la salida y pago de un vehículo"""
+    
+    class Meta:
+        model = ParkingAssignment
+        fields = ['payment_method', 'notes']
+        widgets = {
+            'payment_method': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Observaciones adicionales (opcional)'
+            }),
+        }
+        labels = {
+            'payment_method': 'Método de Pago',
+            'notes': 'Observaciones',
+        }
+        help_texts = {
+            'notes': 'Información adicional sobre el pago o la salida'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['payment_method'].required = True
+        self.fields['notes'].required = False

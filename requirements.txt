@@ -2,3 +2,8 @@ Django
 django-crispy-forms
 djangorestframework
 djangorestframework-jwt
+ultralytics
+opencv-python
+supervision
+pytesseract
+numpy
