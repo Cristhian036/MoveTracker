@@ -12,23 +12,21 @@ from django.template.loader import get_template
 from django.template import Context
 
 
-##################################################################
-####################index#######################################
+# Vista principal
 def index(request):
-    # Si el usuario está autenticado, redirigir al dashboard de parking
+    # Redirigir a dashboard si autenticado
     if request.user.is_authenticated:
         return redirect('parking:dashboard')
     return render(request, 'user/index.html',{'title':'index'})
 
-########################################################################
-########### register here #####################################
 
+# Registro de usuario
 def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST) or None
         if form.is_valid():
             username = request.POST.get('username')
-            #########################mail####################################
+            # Envio de correo
             htmly = get_template('user/Email.html')
             d = { 'username': username }
             subject, from_email, to = 'hello', 'from@example.com', 'to@emaple.com'
@@ -39,11 +37,11 @@ def register(request):
                 msg.send()
             except:
                 print("error en el envío del correo")
-            ##################################################################
-            # Guardar el usuario
+            
+            # Guardar usuario
             user = form.save()
             
-            # Asignar el rol de "usuario" al nuevo usuario
+            # Asignar rol usuario
             try:
                 usuario_group = Group.objects.get(name='usuario')
                 user.groups.add(usuario_group)
@@ -57,13 +55,10 @@ def register(request):
         form = UserRegisterForm()
     return render(request, 'user/register.html', {'form': form,'title':'reqister here'})
 
-###################################################################################
-################login forms###################################################
 
+# Inicio de sesion
 def Login(request):
     if request.method == 'POST':
-
-        #AuthenticationForm_can_also_be_used__
 
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -78,11 +73,9 @@ def Login(request):
     return render(request, 'user/login.html', {'form':form,'title':'log in'})
 
 
-###################################################################################
-################ Gestión de Trabajadores (solo admin) ############################
-
+# Gestion de trabajadores
 def is_admin(user):
-    """Verifica si el usuario es administrador"""
+    # Verificar si es administrador
     if not user.is_authenticated:
         return False
     if user.is_superuser:
@@ -93,7 +86,7 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin, login_url='login')
 def worker_list(request):
-    """Lista de trabajadores (solo admin puede ver)"""
+    # Lista de trabajadores
     # Obtener grupo de trabajadores
     try:
         worker_group = Group.objects.get(name='trabajador')

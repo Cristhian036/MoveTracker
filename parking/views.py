@@ -13,23 +13,20 @@ import math
 
 
 def is_admin_or_worker(user):
-    """Verifica si el usuario es administrador o trabajador"""
+    # Verifica permisos de administrador o trabajador
     if not user.is_authenticated:
         return False
-    # Si el usuario es superusuario, tiene acceso
     if user.is_superuser:
         return True
-    # Verificar si tiene el atributo role (cuando se implemente)
     if hasattr(user, 'role'):
         return user.role in ['ADMIN', 'WORKER']
-    # Por ahora, permitir a usuarios staff
     return user.is_staff
 
 
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def add_vehicle(request):
-    """Vista para añadir un nuevo vehículo"""
+    # Registra un nuevo vehiculo en el sistema
     if request.method == 'POST':
         form = VehicleForm(request.POST)
         if form.is_valid():
@@ -57,10 +54,9 @@ def add_vehicle(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def vehicle_list(request):
-    """Vista para listar todos los vehículos"""
+    # Muestra la lista de vehiculos con filtros de busqueda
     vehicles = Vehicle.objects.select_related('owner', 'registered_by').all()
     
-    # Filtros
     search = request.GET.get('search', '')
     vehicle_type = request.GET.get('type', '')
     
@@ -90,14 +86,13 @@ def vehicle_list(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def assign_vehicle(request):
-    """Vista para asignar un vehículo a un usuario"""
+    # Asigna un vehiculo existente a un usuario
     if request.method == 'POST':
         form = AssignVehicleForm(request.POST)
         if form.is_valid():
             vehicle = form.cleaned_data['vehicle']
             user = form.cleaned_data['user']
             
-            # Cambiar el propietario
             old_owner = vehicle.owner
             vehicle.owner = user
             vehicle.save()
@@ -114,7 +109,6 @@ def assign_vehicle(request):
     else:
         form = AssignVehicleForm()
     
-    # Obtener vehículos asignados para mostrar en la tabla
     assigned_vehicles = Vehicle.objects.filter(owner__isnull=False).select_related('owner').order_by('-updated_at')
     
     context = {
@@ -129,41 +123,34 @@ def assign_vehicle(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def normal_reservation(request):
-    """Vista para crear reservas normales (usuarios registrados)"""
+    # Crea una reserva para usuarios registrados
     if request.method == 'POST':
         form = NormalReservationForm(request.POST)
         if form.is_valid():
             reservation = form.save(commit=False)
             reservation.created_by = request.user
             
-            # Asignar el usuario propietario del vehículo a la reserva
             if reservation.vehicle and reservation.vehicle.owner:
                 reservation.user = reservation.vehicle.owner
                 
             reservation.save()
             
-            # CREAR ASIGNACIÓN AUTOMÁTICA (ENTRADA)
             from .models import ParkingAssignment, ParkingSpace
             
-            # Crear asignación usando la fecha de reserva como hora de entrada
             assignment = ParkingAssignment(
                 vehicle=reservation.vehicle,
                 parking_space=reservation.parking_space,
                 status=ParkingAssignment.AssignmentStatus.ACTIVE,
                 assigned_by=request.user
             )
-            # Guardar primero para obtener el ID
             assignment.save()
-            # Actualizar entry_time con la fecha de reserva
             ParkingAssignment.objects.filter(id=assignment.id).update(
                 entry_time=reservation.reservation_date
             )
             
-            # Actualizar estado del espacio
             reservation.parking_space.status = ParkingSpace.SpaceStatus.OCCUPIED
             reservation.parking_space.save()
             
-            # Actualizar estado de la reserva
             reservation.status = ParkingReservation.ReservationStatus.CONFIRMED
             reservation.save()
             
@@ -189,7 +176,7 @@ def normal_reservation(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def quick_reservation(request):
-    """Vista para crear reservas rápidas (sin usuario registrado)"""
+    # Crea una reserva rapida sin usuario registrado
     if request.method == 'POST':
         form = QuickReservationForm(request.POST)
         if form.is_valid():
@@ -198,43 +185,35 @@ def quick_reservation(request):
             reservation.created_by = request.user
             reservation.save()
             
-            # CREAR ASIGNACIÓN AUTOMÁTICA (ENTRADA)
             from .models import ParkingAssignment, ParkingSpace, Vehicle
             
-            # 1. Buscar o crear vehículo temporal
             vehicle, created = Vehicle.objects.get_or_create(
                 license_plate=reservation.vehicle_plate,
                 defaults={
                     'vehicle_type': reservation.vehicle_type_temp,
-                    'color': 'Desconocido', # Valor por defecto
-                    'owner': None # Sin propietario registrado
+                    'color': 'Desconocido',
+                    'owner': None
                 }
             )
             
-            # Si el vehículo ya existía pero no tenía tipo, actualizarlo
             if not created and not vehicle.vehicle_type:
                 vehicle.vehicle_type = reservation.vehicle_type_temp
                 vehicle.save()
             
-            # 2. Crear asignación usando la fecha de reserva como hora de entrada
             assignment = ParkingAssignment(
                 vehicle=vehicle,
                 parking_space=reservation.parking_space,
                 status=ParkingAssignment.AssignmentStatus.ACTIVE,
                 assigned_by=request.user
             )
-            # Guardar primero para obtener el ID
             assignment.save()
-            # Actualizar entry_time con la fecha de reserva
             ParkingAssignment.objects.filter(id=assignment.id).update(
                 entry_time=reservation.reservation_date
             )
             
-            # 3. Actualizar estado del espacio
             reservation.parking_space.status = ParkingSpace.SpaceStatus.OCCUPIED
             reservation.parking_space.save()
             
-            # 4. Actualizar estado de la reserva
             reservation.status = ParkingReservation.ReservationStatus.CONFIRMED
             reservation.save()
             
@@ -260,8 +239,7 @@ def quick_reservation(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def reservation_list(request):
-    """Vista para listar todas las reservas"""
-    # Actualizar duración de reservas activas/pendientes
+    # Lista todas las reservas y actualiza su duracion
     now = timezone.now()
     active_reservations = ParkingReservation.objects.filter(
         status__in=[
@@ -271,8 +249,6 @@ def reservation_list(request):
     )
     
     for reservation in active_reservations:
-        # Calcular minutos transcurridos desde la fecha de reserva hasta ahora
-        # Si la fecha de reserva es futura, la duración será 0 o negativa (lo manejamos como 0)
         if reservation.reservation_date <= now:
             delta = now - reservation.reservation_date
             minutes = int(delta.total_seconds() / 60)
@@ -284,7 +260,6 @@ def reservation_list(request):
         'vehicle', 'vehicle__owner', 'parking_space', 'parking_space__floor', 'created_by'
     ).all().order_by('-created_at')
     
-    # Filtros
     search = request.GET.get('search', '')
     reservation_type = request.GET.get('type', '')
     status = request.GET.get('status', '')
@@ -335,7 +310,7 @@ def reservation_list(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def reservation_detail(request, pk):
-    """Vista para ver el detalle de una reserva"""
+    # Muestra los detalles de una reserva especifica
     reservation = get_object_or_404(
         ParkingReservation.objects.select_related(
             'vehicle', 'vehicle__owner', 'parking_space', 
@@ -355,7 +330,7 @@ def reservation_detail(request, pk):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def cancel_reservation(request, pk):
-    """Vista para cancelar una reserva"""
+    # Cancela una reserva existente
     reservation = get_object_or_404(ParkingReservation, pk=pk)
     
     if request.method == 'POST':
@@ -375,13 +350,11 @@ def cancel_reservation(request, pk):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def dashboard(request):
-    """Dashboard principal del sistema de estacionamiento"""
+    # Muestra el panel principal con estadisticas
     from .models import ParkingConfiguration, ParkingFloor
     
-    # Obtener configuración activa
     config = ParkingConfiguration.objects.filter(is_active=True).first()
     
-    # Estadísticas
     total_spaces = ParkingSpace.objects.filter(is_active=True).count()
     available_spaces = ParkingSpace.objects.filter(
         status=ParkingSpace.SpaceStatus.AVAILABLE,
@@ -412,7 +385,6 @@ def dashboard(request):
         status=ParkingReservation.ReservationStatus.PENDING
     ).count()
     
-    # Reservas recientes
     recent_reservations = ParkingReservation.objects.select_related(
         'vehicle', 'vehicle__owner', 'parking_space', 'created_by'
     ).exclude(
@@ -438,26 +410,19 @@ def dashboard(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser or (u.groups.filter(name='admin').exists()), login_url='user:login')
 def space_configuration(request):
-    """Vista para configurar los espacios del estacionamiento"""
-    # Obtener configuración actual para pre-llenar (si existe)
+    # Configura los espacios y pisos del estacionamiento
     current_config = ParkingConfiguration.objects.filter(is_active=True).first()
     
     if request.method == 'POST':
-        # Creamos una nueva instancia siempre, no editamos la anterior
         form = ParkingConfigurationForm(request.POST)
         if form.is_valid():
-            # 1. Desactivar espacios y pisos antiguos
             ParkingSpace.objects.filter(is_active=True).update(is_active=False)
             ParkingFloor.objects.filter(is_active=True).update(is_active=False)
             
-            # 2. Guardar nueva configuración
             new_config = form.save(commit=False)
             new_config.created_by = request.user
             new_config.is_active = True
-            new_config.save() # Esto desactivará la configuración anterior automáticamente y disparará los signals para crear pisos/espacios
-            
-            # Nota: La creación de pisos y espacios se maneja automáticamente mediante signals
-            # en parking/signals.py (create_parking_structure y create_floor_spaces)
+            new_config.save()
             
             total_spaces = new_config.total_floors * new_config.spaces_per_floor
             
@@ -467,7 +432,6 @@ def space_configuration(request):
             )
             return redirect('parking:space_configuration')
     else:
-        # Pre-llenar formulario con valores actuales pero sin vincular a la instancia
         initial_data = {}
         if current_config:
             initial_data = {
@@ -487,12 +451,11 @@ def space_configuration(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def assignment_list(request):
-    """Vista para listar todas las asignaciones de estacionamiento"""
+    # Lista las asignaciones de estacionamiento
     assignments = ParkingAssignment.objects.select_related(
         'vehicle', 'parking_space', 'parking_space__floor', 'assigned_by', 'completed_by'
     ).all().order_by('-entry_time')
     
-    # Filtros
     search = request.GET.get('search', '')
     status = request.GET.get('status', '')
     
@@ -521,24 +484,21 @@ def assignment_list(request):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def checkout(request, pk):
-    """Vista para registrar la salida de un vehículo y procesar el pago"""
+    # Procesa la salida y pago de un vehiculo
     assignment = get_object_or_404(
         ParkingAssignment.objects.select_related('vehicle', 'parking_space', 'parking_space__floor'),
         pk=pk
     )
     
-    # Verificar que la asignación esté activa
     if assignment.status != ParkingAssignment.AssignmentStatus.ACTIVE:
         messages.error(request, 'Esta asignación ya fue completada o cancelada.')
         return redirect('parking:assignment_list')
     
-    # Calcular el costo actual
     now = timezone.now()
     duration = now - assignment.entry_time
     total_minutes = duration.total_seconds() / 60
     hours_parked = math.ceil(total_minutes / 60)
     
-    # Obtener tarifa
     try:
         tariff = VehicleTariff.objects.get(
             vehicle_type=assignment.vehicle.vehicle_type,
@@ -554,7 +514,6 @@ def checkout(request, pk):
     if request.method == 'POST':
         form = CheckoutForm(request.POST, instance=assignment)
         if form.is_valid():
-            # Completar asignación
             payment_method = form.cleaned_data['payment_method']
             assignment.complete_assignment(
                 completed_by=request.user,
@@ -586,7 +545,7 @@ def checkout(request, pk):
 @login_required
 @user_passes_test(is_admin_or_worker, login_url='user:login')
 def print_receipt(request, pk):
-    """Vista para imprimir/visualizar la boleta de pago"""
+    # Muestra la boleta de pago para imprimir
     assignment = get_object_or_404(
         ParkingAssignment.objects.select_related('vehicle', 'parking_space', 'parking_space__floor', 'completed_by'),
         pk=pk
@@ -596,7 +555,6 @@ def print_receipt(request, pk):
         messages.error(request, 'Esta asignación no tiene boleta generada.')
         return redirect('parking:assignment_list')
     
-    # Calcular horas
     if assignment.exit_time and assignment.entry_time:
         duration = assignment.exit_time - assignment.entry_time
         total_minutes = duration.total_seconds() / 60
@@ -604,7 +562,6 @@ def print_receipt(request, pk):
     else:
         hours_parked = 0
     
-    # Obtener tarifa
     try:
         tariff = VehicleTariff.objects.get(
             vehicle_type=assignment.vehicle.vehicle_type,

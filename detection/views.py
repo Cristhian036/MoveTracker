@@ -9,20 +9,20 @@ import os
 import pytesseract
 from django.core.files.storage import FileSystemStorage
 
-# Configuration
+# Configuracion
 BASE_DIR = settings.BASE_DIR
 MODEL_VEHICLE_PATH = os.path.join(BASE_DIR, 'detection', 'models', 'yolov10n.pt')
 MODEL_PLATE_PATH = os.path.join(BASE_DIR, 'detection', 'models', 'placa.pt')
 VIDEO_PATH = os.path.join(BASE_DIR, 'detection', 'videos', 'video.mp4')
 TESSERACT_CMD = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
-# Set tesseract cmd
+# Configurar comando tesseract
 try:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 except:
     pass
 
-# Global dictionary to store latest detections
+# Diccionario global para ultimas detecciones
 latest_detections = {}
 
 def cropped(detections, image):
@@ -31,7 +31,7 @@ def cropped(detections, image):
         return None
     xmin, ymin, xmax, ymax = bounding_box[0]
     xmin, ymin, xmax, ymax = int(xmin), int(ymin), int(xmax), int(ymax)
-    # Ensure coordinates are within image bounds
+    # Asegurar coordenadas dentro de imagen
     h, w, _ = image.shape
     xmin = max(0, xmin)
     ymin = max(0, ymin)
@@ -46,14 +46,14 @@ def cropped(detections, image):
 
 def stream_video(source=VIDEO_PATH, detection_id=None):
     if isinstance(source, int):
-        # Use DirectShow for Windows camera to avoid some driver issues
+        # Usar DirectShow para camara en Windows
         cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
     else:
         cap = cv2.VideoCapture(source)
         
     if not cap.isOpened():
         print(f'Error: No se puede abrir la fuente de video: {source}')
-        # Try fallback for camera if DSHOW fails or wasn't used
+        # Intentar camara alternativa si falla
         if isinstance(source, int):
              print(f'Intentando abrir camara {source} sin CAP_DSHOW...')
              cap = cv2.VideoCapture(source)
@@ -87,18 +87,18 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
 
             class_id = [2, 3, 5, 7] # car, motorcycle, bus, truck
             
-            # Filter detections
+            # Filtrar detecciones
             mask = np.isin(detections_t.class_id, class_id)
             detections_t = detections_t[mask]
 
             annotated_image = frame.copy()
 
             if len(detections_t) > 0:
-                # Annotate vehicles
+                # Anotar vehiculos
                 annotated_image = bounding_box_annotator_vehicle.annotate(scene=annotated_image, detections=detections_t)
                 annotated_image = label_annotator_vehicle.annotate(scene=annotated_image, detections=detections_t)
                 
-                # Process the first vehicle for plate detection
+                # Procesar primer vehiculo para placa
                 cropped_image_t = cropped(detections_t, frame)
                 
                 if cropped_image_t is not None and cropped_image_t.size > 0:
@@ -107,10 +107,10 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
                     detections_p = sv.Detections.from_ultralytics(results_p)
                     
                     if len(detections_p) > 0:
-                        # Crop plate for OCR BEFORE modifying coordinates
+                        # Recortar placa para OCR antes de modificar coordenadas
                         cropped_image_matricula = cropped(detections_p, cropped_image_t)
 
-                        # Calculate new coordinates for plate on the main frame
+                        # Calcular nuevas coordenadas de placa
                         dif_x = results_p.boxes.xyxy[0][2] - results_p.boxes.xyxy[0][0]
                         dif_y = results_p.boxes.xyxy[0][3] - results_p.boxes.xyxy[0][1]
                         
@@ -121,25 +121,25 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
                         
                         detections_p.xyxy = np.array([[x1_nuevo, y1_nuevo, x2_nuevo, y2_nuevo]])
                         
-                        # Annotate plate
+                        # Anotar placa
                         annotated_image = bounding_box_annotator_plate.annotate(scene=annotated_image, detections=detections_p)
                         annotated_image = label_annotator_plate.annotate(scene=annotated_image, detections=detections_p)
                         
-                        # OCR
+                        # Reconocimiento optico de caracteres
                         if cropped_image_matricula is not None and cropped_image_matricula.size > 0:
                             try:
                                 gray = cv2.cvtColor(cropped_image_matricula, cv2.COLOR_BGR2GRAY)
                                 data = pytesseract.image_to_string(gray, lang='eng', config='--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYXabcdefghijklmnopqrstuvwxyz')
                                 
                                 valor_medio = round(len(data)/2)
-                                # Simple cleaning based on original script
+                                # Limpieza simple basada en script original
                                 if len(data) > 6:
                                     data = data[max(0, valor_medio-3):min(len(data), valor_medio+4)]
                                 
-                                # Draw text on frame
+                                # Dibujar texto en cuadro
                                 cv2.putText(annotated_image, f'Plate: {data.strip()}', (int(x1_nuevo), int(y1_nuevo)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                                 
-                                # Update latest detection
+                                # Actualizar ultima deteccion
                                 if detection_id and data.strip():
                                     latest_detections[detection_id] = data.strip()
                                 
@@ -147,10 +147,10 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
                                 print(f'OCR Error: {e}')
                                 pass
 
-            # Resize for display
+            # Redimensionar para visualizacion
             # frame_display = cv2.resize(annotated_image, (1280, 720))
             
-            # Use original frame to respect aspect ratio
+            # Usar cuadro original para respetar aspecto
             frame_display = annotated_image
 
             _, jpeg = cv2.imencode('.jpg', frame_display)
@@ -184,8 +184,8 @@ def upload_video(request):
         filename = fs.save(video_file.name, video_file)
         video_path = fs.path(filename)
         
-        # Store the path in session or pass it to the template
-        # For simplicity, we'll pass the filename to the template and use it in the feed URL
+        # Guardar ruta en sesion o pasar a plantilla
+        # Pasar nombre de archivo a plantilla
         return render(request, 'detection/upload_video.html', {
             'uploaded_video_url': filename
         })

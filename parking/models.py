@@ -4,17 +4,14 @@ from user.models import User
 
 
 class VehicleType(models.TextChoices):
-    """Tipos de vehículos soportados"""
+    # Tipos de vehiculos soportados
     CAR = 'CAR', 'Auto'
     TRUCK = 'TRUCK', 'Camioneta'
     MOTORCYCLE = 'MOTORCYCLE', 'Moto'
 
 
 class ParkingConfiguration(models.Model):
-    """
-    Configuración dinámica del estacionamiento.
-    Solo debe existir una instancia activa.
-    """
+    # Configuracion dinamica del estacionamiento
     total_floors = models.PositiveIntegerField(
         verbose_name='Total de Pisos',
         validators=[MinValueValidator(1)],
@@ -49,21 +46,19 @@ class ParkingConfiguration(models.Model):
         return f"{self.total_floors} pisos - {self.spaces_per_floor} espacios/piso"
 
     def save(self, *args, **kwargs):
-        """Asegurar que solo haya una configuración activa"""
+        # Asegura que solo haya una configuracion activa
         if self.is_active:
             ParkingConfiguration.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)
 
     @property
     def total_capacity(self):
-        """Capacidad total del estacionamiento"""
+        # Capacidad total del estacionamiento
         return self.total_floors * self.spaces_per_floor
 
 
 class VehicleTariff(models.Model):
-    """
-    Tarifas por tipo de vehículo (calculadas por hora).
-    """
+    # Tarifas por tipo de vehiculo
     vehicle_type = models.CharField(
         max_length=20,
         choices=VehicleType.choices,
@@ -91,10 +86,7 @@ class VehicleTariff(models.Model):
 
 
 class Vehicle(models.Model):
-    """
-    Vehículos registrados en el sistema.
-    Pueden ser asignados a usuarios.
-    """
+    # Vehiculos registrados en el sistema
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -161,15 +153,12 @@ class Vehicle(models.Model):
 
     @property
     def full_description(self):
-        """Descripción completa del vehículo"""
+        # Descripcion completa del vehiculo
         return f"{self.year} {self.brand} {self.model} {self.color}"
 
 
 class ParkingFloor(models.Model):
-    """
-    Representa un piso del estacionamiento.
-    Se crean automáticamente según la configuración.
-    """
+    # Representa un piso del estacionamiento
     configuration = models.ForeignKey(
         ParkingConfiguration,
         on_delete=models.CASCADE,
@@ -205,9 +194,7 @@ class ParkingFloor(models.Model):
 
 
 class ParkingSpace(models.Model):
-    """
-    Representa un espacio individual de estacionamiento.
-    """
+    # Representa un espacio individual de estacionamiento
     class SpaceStatus(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Disponible'
         OCCUPIED = 'OCCUPIED', 'Ocupado'
@@ -248,15 +235,12 @@ class ParkingSpace(models.Model):
 
     @property
     def full_code(self):
-        """Código completo del espacio (ej: P1-025)"""
+        # Codigo completo del espacio
         return f"P{self.floor.floor_number}-{str(self.space_number).zfill(3)}"
 
 
 class ParkingAssignment(models.Model):
-    """
-    Asignación de un vehículo a un espacio de estacionamiento.
-    Registro de entrada y salida.
-    """
+    # Asignacion de un vehiculo a un espacio
     class AssignmentStatus(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Activo'
         COMPLETED = 'COMPLETED', 'Completado'
@@ -357,7 +341,7 @@ class ParkingAssignment(models.Model):
         return f"{self.vehicle.license_plate} en {self.parking_space.full_code}"
 
     def calculate_cost(self):
-        """Calcula el costo según el tiempo de estacionamiento en Soles"""
+        # Calcula el costo segun el tiempo de estacionamiento
         if not self.exit_time:
             return None
         
@@ -382,7 +366,7 @@ class ParkingAssignment(models.Model):
             return None
 
     def generate_receipt_number(self):
-        """Genera un número único de boleta"""
+        # Genera un numero unico de boleta
         from django.utils import timezone
         import random
         
@@ -401,7 +385,7 @@ class ParkingAssignment(models.Model):
         return receipt_num
     
     def complete_assignment(self, completed_by=None, payment_method=None):
-        """Marca la asignación como completada, calcula el costo y genera boleta"""
+        # Marca la asignacion como completada y genera boleta
         from django.utils import timezone
         
         self.exit_time = timezone.now()
@@ -422,9 +406,7 @@ class ParkingAssignment(models.Model):
 
 
 class ParkingReservation(models.Model):
-    """
-    Reservas de espacios de estacionamiento.
-    """
+    # Reservas de espacios de estacionamiento
     class ReservationStatus(models.TextChoices):
         PENDING = 'PENDING', 'Pendiente'
         CONFIRMED = 'CONFIRMED', 'Confirmado'
@@ -551,7 +533,7 @@ class ParkingReservation(models.Model):
             return f"Reserva {user_name} - {self.reservation_date}"
     
     def clean(self):
-        """Validación: debe tener usuario/vehículo O datos de reserva rápida"""
+        # Validacion: debe tener usuario/vehiculo O datos de reserva rapida
         from django.core.exceptions import ValidationError
         
         # Si no es reserva rápida, debe tener usuario y vehículo
@@ -570,7 +552,7 @@ class ParkingReservation(models.Model):
                 )
     
     def save(self, *args, **kwargs):
-        """Auto-detectar si es reserva rápida"""
+        # Auto-detectar si es reserva rapida
         # Si no tiene usuario ni vehículo, marcar como reserva rápida
         if not self.user and not self.vehicle:
             self.is_quick_reservation = True
@@ -585,7 +567,7 @@ class ParkingReservation(models.Model):
     
     @property
     def customer_info(self):
-        """Retorna información del cliente (registrado o rápido)"""
+        # Retorna informacion del cliente
         if self.is_quick_reservation:
             info = []
             if self.customer_name:
@@ -602,7 +584,7 @@ class ParkingReservation(models.Model):
     
     @property
     def vehicle_info(self):
-        """Retorna información del vehículo (registrado o temporal)"""
+        # Retorna informacion del vehiculo
         if self.is_quick_reservation:
             parts = []
             if self.vehicle_plate:
@@ -617,7 +599,7 @@ class ParkingReservation(models.Model):
     
     @property
     def duration_formatted(self):
-        """Retorna la duración en formato Xh Ym"""
+        # Retorna la duracion en formato Xh Ym
         hours = self.duration_minutes // 60
         minutes = self.duration_minutes % 60
         if hours > 0:

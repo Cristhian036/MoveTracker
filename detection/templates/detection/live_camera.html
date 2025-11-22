@@ -40,9 +40,7 @@
         var cameraIndex = this.value;
         currentCameraIndex = cameraIndex;
         var img = document.getElementById('cameraFeed');
-        // Stop current feed by clearing src temporarily (optional, but helps visual feedback)
         img.src = "";
-        // Add timestamp to prevent caching
         setTimeout(function() {
             img.src = "{% url 'live_feed' %}?camera_index=" + cameraIndex + "&t=" + new Date().getTime();
         }, 100);

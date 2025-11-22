@@ -93,7 +93,7 @@ class VehicleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtrar solo usuarios activos
+        # Filtrar usuarios activos
         self.fields['owner'].queryset = User.objects.filter(is_active=True)
 
 
@@ -120,7 +120,7 @@ class AssignVehicleForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Mostrar solo vehículos con propietario
+        # Mostrar vehiculos con propietario
         self.fields['vehicle'].queryset = Vehicle.objects.select_related('owner').all()
         self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()} ({obj.owner.get_full_name() if obj.owner else 'Sin propietario'})"
 
@@ -160,11 +160,11 @@ class NormalReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Solo mostrar vehículos registrados
+        # Mostrar vehiculos registrados
         self.fields['vehicle'].queryset = Vehicle.objects.select_related('owner').all()
         self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()}"
         
-        # Solo mostrar espacios disponibles
+        # Mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
             status=ParkingSpace.SpaceStatus.AVAILABLE,
@@ -220,22 +220,22 @@ class QuickReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Marcar la instancia como reserva rápida para pasar validaciones del modelo
+        # Marcar como reserva rapida
         self.instance.is_quick_reservation = True
         
-        # Campos obligatorios según requerimiento
+        # Campos obligatorios
         self.fields['vehicle_type_temp'].required = True
         self.fields['parking_space'].required = True
         self.fields['reservation_date'].required = True
         
-        # Campos opcionales y ocultos
+        # Campos opcionales
         self.fields['customer_name'].required = False
         self.fields['customer_phone'].required = False
         self.fields['customer_email'].required = False
         self.fields['vehicle_plate'].required = False
         self.fields['notes'].required = False
 
-        # Solo mostrar espacios disponibles
+        # Mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
             status=ParkingSpace.SpaceStatus.AVAILABLE,
