@@ -74,8 +74,8 @@ class VehicleTariff(models.Model):
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name='Tarifa por Hora (S/)',
-        help_text='Costo por hora de estacionamiento en Soles'
+        verbose_name='Tarifa por Hora',
+        help_text='Costo por hora de estacionamiento'
     )
     is_active = models.BooleanField(default=True, verbose_name='Tarifa Activa')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Creación')
@@ -99,9 +99,7 @@ class Vehicle(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='vehicles',
-        verbose_name='Propietario',
-        null=True,
-        blank=True
+        verbose_name='Propietario'
     )
     vehicle_type = models.CharField(
         max_length=20,
@@ -262,12 +260,6 @@ class ParkingAssignment(models.Model):
         COMPLETED = 'COMPLETED', 'Completado'
         CANCELLED = 'CANCELLED', 'Cancelado'
 
-    class PaymentMethod(models.TextChoices):
-        CASH = 'CASH', 'Efectivo'
-        CARD = 'CARD', 'Tarjeta'
-        YAPE = 'YAPE', 'Yape'
-        PLIN = 'PLIN', 'Plin'
-
     vehicle = models.ForeignKey(
         Vehicle,
         on_delete=models.CASCADE,
@@ -308,20 +300,6 @@ class ParkingAssignment(models.Model):
         blank=True,
         verbose_name='Costo Total'
     )
-    payment_method = models.CharField(
-        max_length=20,
-        choices=PaymentMethod.choices,
-        null=True,
-        blank=True,
-        verbose_name='Método de Pago'
-    )
-    receipt_number = models.CharField(
-        max_length=20,
-        null=True,
-        blank=True,
-        unique=True,
-        verbose_name='Número de Boleta'
-    )
     notes = models.TextField(
         blank=True,
         verbose_name='Observaciones'
@@ -357,18 +335,14 @@ class ParkingAssignment(models.Model):
         return f"{self.vehicle.license_plate} en {self.parking_space.full_code}"
 
     def calculate_cost(self):
-        """Calcula el costo según el tiempo de estacionamiento en Soles"""
+        """Calcula el costo según el tiempo de estacionamiento"""
         if not self.exit_time:
             return None
         
         from decimal import Decimal
-        import math
         
         duration = self.exit_time - self.entry_time
-        total_minutes = duration.total_seconds() / 60
-        
-        # Redondear hacia arriba cada hora (fracción se cobra como hora completa)
-        hours = math.ceil(total_minutes / 60)
+        hours = Decimal(str(duration.total_seconds() / 3600))
         
         try:
             tariff = VehicleTariff.objects.get(
@@ -376,43 +350,23 @@ class ParkingAssignment(models.Model):
                 is_active=True
             )
             
-            # Calcular costo basado en horas completas
-            return Decimal(str(hours)) * tariff.rate_per_hour
+            # Si es más de 24 horas, usar tarifa diaria
+            if hours >= 24:
+                days = hours / Decimal('24')
+                return tariff.daily_rate * days
+            else:
+                return tariff.hourly_rate * hours
         except VehicleTariff.DoesNotExist:
             return None
 
-    def generate_receipt_number(self):
-        """Genera un número único de boleta"""
-        from django.utils import timezone
-        import random
-        
-        # Formato: B-YYYYMMDD-XXXXX (B de Boleta)
-        now = timezone.now()
-        date_part = now.strftime('%Y%m%d')
-        random_part = str(random.randint(10000, 99999))
-        
-        receipt_num = f"B-{date_part}-{random_part}"
-        
-        # Verificar que no exista
-        while ParkingAssignment.objects.filter(receipt_number=receipt_num).exists():
-            random_part = str(random.randint(10000, 99999))
-            receipt_num = f"B-{date_part}-{random_part}"
-        
-        return receipt_num
-    
-    def complete_assignment(self, completed_by=None, payment_method=None):
-        """Marca la asignación como completada, calcula el costo y genera boleta"""
+    def complete_assignment(self, completed_by=None):
+        """Marca la asignación como completada y calcula el costo"""
         from django.utils import timezone
         
         self.exit_time = timezone.now()
         self.status = self.AssignmentStatus.COMPLETED
         self.total_cost = self.calculate_cost()
         self.completed_by = completed_by
-        self.payment_method = payment_method or self.PaymentMethod.CASH
-        
-        # Generar número de boleta
-        if not self.receipt_number:
-            self.receipt_number = self.generate_receipt_number()
         
         # Liberar el espacio
         self.parking_space.status = ParkingSpace.SpaceStatus.AVAILABLE
@@ -574,10 +528,6 @@ class ParkingReservation(models.Model):
         # Si no tiene usuario ni vehículo, marcar como reserva rápida
         if not self.user and not self.vehicle:
             self.is_quick_reservation = True
-            
-        # Si es reserva normal y tiene vehículo pero no usuario, asignar el dueño del vehículo
-        if not self.is_quick_reservation and self.vehicle and not self.user:
-            self.user = self.vehicle.owner
         
         # Validar antes de guardar
         self.clean()
@@ -614,12 +564,3 @@ class ParkingReservation(models.Model):
             if self.vehicle:
                 return f"{self.vehicle.license_plate} - {self.vehicle.full_description}"
             return "Sin vehículo"
-    
-    @property
-    def duration_formatted(self):
-        """Retorna la duración en formato Xh Ym"""
-        hours = self.duration_minutes // 60
-        minutes = self.duration_minutes % 60
-        if hours > 0:
-            return f"{hours}h {minutes}m"
-        return f"{minutes}m"

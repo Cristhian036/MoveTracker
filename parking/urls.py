@@ -19,11 +19,6 @@ urlpatterns = [
     path('reservations/quick/new/', views.quick_reservation, name='quick_reservation'),
     path('reservations/<int:pk>/cancel/', views.cancel_reservation, name='cancel_reservation'),
     
-    # Asignaciones y Checkout
-    path('assignments/', views.assignment_list, name='assignment_list'),
-    path('assignments/<int:pk>/checkout/', views.checkout, name='checkout'),
-    path('assignments/<int:pk>/receipt/', views.print_receipt, name='print_receipt'),
-    
     # Configuración
     path('configuration/spaces/', views.space_configuration, name='space_configuration'),
 ]

@@ -185,10 +185,6 @@
                        href="{% url 'parking:add_vehicle' %}">
                         <i class="bi bi-plus-circle"></i> Añadir Vehículo
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'assign_vehicle' %}active{% endif %}" 
-                       href="{% url 'parking:assign_vehicle' %}">
-                        <i class="bi bi-person-badge"></i> Asignar Vehículo
-                    </a>
 
                     
                     <hr>
@@ -205,14 +201,6 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'quick_reservation' %}active{% endif %}" 
                        href="{% url 'parking:quick_reservation' %}">
                         <i class="bi bi-lightning-charge"></i> Reserva Rápida
-                    </a>
-                    
-                    <hr>
-                    <small class="text-muted px-3">GESTIÓN DE SALIDAS</small>
-                    
-                    <a class="nav-link {% if request.resolver_match.url_name == 'assignment_list' %}active{% endif %}" 
-                       href="{% url 'parking:assignment_list' %}">
-                        <i class="bi bi-car-front-fill"></i> Vehículos Estacionados
                     </a>
                     
                     {% if user.is_superuser or user.groups.all.0.name == 'admin' %}

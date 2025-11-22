@@ -36,8 +36,7 @@
                 {% else %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Reserva Normal:</strong> Para reservas normales se requiere usuario y vehículo registrado. 
-                        Marque como <a href="{% url 'parking:quick_reservation' %}" class="alert-link">"Reserva Rápida"</a> si desea crear una reserva manual.
+                        <strong>Reserva Normal:</strong> Seleccione un vehículo registrado para crear la reserva.
                     </div>
                 {% endif %}
 
@@ -139,12 +138,7 @@
                                     {{ form.reservation_date.label }}
                                     <span class="text-danger">*</span>
                                 </label>
-                                <div class="input-group">
-                                    {{ form.reservation_date }}
-                                    <button class="btn btn-outline-secondary" type="button" id="set-now-btn" title="Establecer hora actual">
-                                        <i class="bi bi-clock"></i> Ahora
-                                    </button>
-                                </div>
+                                {{ form.reservation_date }}
                                 {% if form.reservation_date.help_text %}
                                     <div class="form-text">{{ form.reservation_date.help_text }}</div>
                                 {% endif %}
@@ -190,22 +184,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const nowBtn = document.getElementById('set-now-btn');
-        const dateInput = document.getElementById('{{ form.reservation_date.id_for_label }}');
-
-        if (nowBtn && dateInput) {
-            nowBtn.addEventListener('click', function() {
-                const now = new Date();
-                // Ajustar a zona horaria local para el input datetime-local
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                dateInput.value = now.toISOString().slice(0, 16);
-            });
-        }
-    });
-</script>
 {% endblock %}

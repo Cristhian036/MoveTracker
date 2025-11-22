@@ -139,7 +139,7 @@
                                         <td>
                                             {% if reservation.reservation_date <= now and reservation.status != 'CANCELLED' %}
                                                 <span class="badge bg-light text-dark border">
-                                                    <i class="bi bi-stopwatch"></i> {{ reservation.duration_formatted }}
+                                                    <i class="bi bi-stopwatch"></i> {{ reservation.duration_minutes }} min
                                                 </span>
                                             {% else %}
                                                 <span class="text-muted">-</span>
