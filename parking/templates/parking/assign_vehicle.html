@@ -63,4 +63,55 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-list-check"></i> Vehículos Asignados Recientemente
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Placa</th>
+                                <th>Tipo</th>
+                                <th>Propietario</th>
+                                <th>Marca/Modelo</th>
+                                <th>Última Actualización</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in assigned_vehicles %}
+                            <tr>
+                                <td><span class="badge bg-primary">{{ vehicle.license_plate }}</span></td>
+                                <td>{{ vehicle.get_vehicle_type_display }}</td>
+                                <td>
+                                    <i class="bi bi-person"></i> 
+                                    {{ vehicle.owner.get_full_name|default:vehicle.owner.username }}
+                                </td>
+                                <td>
+                                    {% if vehicle.brand or vehicle.model %}
+                                        {{ vehicle.brand }} {{ vehicle.model }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ vehicle.updated_at|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    No hay vehículos asignados registrados.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

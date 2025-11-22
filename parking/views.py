@@ -102,9 +102,11 @@ def assign_vehicle(request):
             vehicle.owner = user
             vehicle.save()
             
+            old_owner_name = (old_owner.get_full_name() or old_owner.username) if old_owner else "Sin propietario"
+            
             messages.success(
                 request,
-                f'Vehículo {vehicle.license_plate} reasignado de {old_owner.get_full_name() or old_owner.username} a {user.get_full_name() or user.username}.'
+                f'Vehículo {vehicle.license_plate} reasignado de {old_owner_name} a {user.get_full_name() or user.username}.'
             )
             return redirect('parking:vehicle_list')
         else:
@@ -112,10 +114,14 @@ def assign_vehicle(request):
     else:
         form = AssignVehicleForm()
     
+    # Obtener vehículos asignados para mostrar en la tabla
+    assigned_vehicles = Vehicle.objects.filter(owner__isnull=False).select_related('owner').order_by('-updated_at')
+    
     context = {
         'form': form,
         'title': 'Asignar Vehículo a Usuario',
-        'submit_text': 'Asignar Vehículo'
+        'submit_text': 'Asignar Vehículo',
+        'assigned_vehicles': assigned_vehicles
     }
     return render(request, 'parking/assign_vehicle.html', context)
 

@@ -148,7 +148,10 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
                                 pass
 
             # Resize for display
-            frame_display = cv2.resize(annotated_image, (1280, 720))
+            # frame_display = cv2.resize(annotated_image, (1280, 720))
+            
+            # Use original frame to respect aspect ratio
+            frame_display = annotated_image
 
             _, jpeg = cv2.imencode('.jpg', frame_display)
             yield (b'--frame\r\n'

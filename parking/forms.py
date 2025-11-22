@@ -122,7 +122,7 @@ class AssignVehicleForm(forms.Form):
         super().__init__(*args, **kwargs)
         # Mostrar solo vehículos con propietario
         self.fields['vehicle'].queryset = Vehicle.objects.select_related('owner').all()
-        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()} ({obj.owner.get_full_name() or obj.owner.username})"
+        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()} ({obj.owner.get_full_name() if obj.owner else 'Sin propietario'})"
 
 
 class NormalReservationForm(forms.ModelForm):
