@@ -185,10 +185,6 @@
                        href="{% url 'parking:add_vehicle' %}">
                         <i class="bi bi-plus-circle"></i> Añadir Vehículo
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'assign_vehicle' %}active{% endif %}" 
-                       href="{% url 'parking:assign_vehicle' %}">
-                        <i class="bi bi-person-badge"></i> Asignar Vehículo
-                    </a>
 
                     
                     <hr>
@@ -205,26 +201,6 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'quick_reservation' %}active{% endif %}" 
                        href="{% url 'parking:quick_reservation' %}">
                         <i class="bi bi-lightning-charge"></i> Reserva Rápida
-                    </a>
-                    
-                    <hr>
-                    <small class="text-muted px-3">GESTIÓN DE SALIDAS</small>
-                    
-                    <a class="nav-link {% if request.resolver_match.url_name == 'assignment_list' %}active{% endif %}" 
-                       href="{% url 'parking:assignment_list' %}">
-                        <i class="bi bi-car-front-fill"></i> Vehículos Estacionados
-                    </a>
-
-                    <hr>
-                    <small class="text-muted px-3">DETECCIÓN</small>
-                    
-                    <a class="nav-link {% if request.resolver_match.url_name == 'live_camera' %}active{% endif %}" 
-                       href="{% url 'live_camera' %}">
-                        <i class="bi bi-camera-video"></i> Cámara en Vivo
-                    </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'upload_video' %}active{% endif %}" 
-                       href="{% url 'upload_video' %}">
-                        <i class="bi bi-upload"></i> Subir Video
                     </a>
                     
                     {% if user.is_superuser or user.groups.all.0.name == 'admin' %}

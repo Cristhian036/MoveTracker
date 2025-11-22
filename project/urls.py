@@ -23,6 +23,5 @@ urlpatterns = [
 
     #####parking related path##########################
     path('parking/',include('parking.urls')),
-    path('detection/',include('detection.urls')),
 
 ]
