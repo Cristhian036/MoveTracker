@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.db import connection
+from .models import User
 
 
 class UserRegisterForm(UserCreationForm):
@@ -52,19 +51,11 @@ class UserRegisterForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         user.first_name = self.cleaned_data.get('first_name', '')
         user.last_name = self.cleaned_data.get('last_name', '')
+        user.dni = self.cleaned_data.get('dni') or None
+        user.phone = self.cleaned_data.get('phone') or None
         
         if commit:
             user.save()
-            
-            # Guardar dni y phone directamente en auth_user usando SQL
-            dni_value = self.cleaned_data.get('dni') or None
-            phone_value = self.cleaned_data.get('phone') or None
-            
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE auth_user SET dni = %s, phone = %s WHERE id = %s",
-                    [dni_value, phone_value, user.id]
-                )
         
         return user
 
@@ -117,6 +108,8 @@ class WorkerCreateForm(UserCreationForm):
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
         user.is_staff = True  # Los trabajadores tienen acceso al sistema
+        user.dni = self.cleaned_data.get('dni') or None
+        user.phone = self.cleaned_data.get('phone') or None
         
         if commit:
             user.save()
@@ -125,15 +118,5 @@ class WorkerCreateForm(UserCreationForm):
             from django.contrib.auth.models import Group
             worker_group, created = Group.objects.get_or_create(name='trabajador')
             user.groups.add(worker_group)
-            
-            # Guardar dni y phone
-            dni_value = self.cleaned_data.get('dni') or None
-            phone_value = self.cleaned_data.get('phone') or None
-            
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE auth_user SET dni = %s, phone = %s WHERE id = %s",
-                    [dni_value, phone_value, user.id]
-                )
         
         return user

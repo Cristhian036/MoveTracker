@@ -12,11 +12,16 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+# Custom User Model
+AUTH_USER_MODEL = 'user.User'
+
+
 # Application definition
 
 INSTALLED_APPS = [
     'user.apps.UserConfig',
     'parking.apps.ParkingConfig',
+    'detection.apps.DetectionConfig',
 
     'crispy_forms',
     'crispy_bootstrap3',
@@ -113,9 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-pe'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
@@ -141,7 +146,3 @@ EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST="smtp.gmail.com"
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-####################collage email id ##############
-EMAIL_HOST_USER="tacc2325@gmail.com"
-EMAIL_HOST_PASSWORD="#"
-##################################################

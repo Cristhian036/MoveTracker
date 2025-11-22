@@ -85,7 +85,7 @@
                                     <th>Vehículo</th>
                                     <th>Espacio</th>
                                     <th>Inicio</th>
-                                    <th>Fin</th>
+                                    <th>Duración</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -132,23 +132,31 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            Piso {{ reservation.reserved_space.floor.floor_number }}<br>
-                                            <small class="text-muted">Espacio {{ reservation.reserved_space.space_number }}</small>
+                                            Piso {{ reservation.parking_space.floor.floor_number }}<br>
+                                            <small class="text-muted">Espacio {{ reservation.parking_space.space_number }}</small>
                                         </td>
-                                        <td>{{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
-                                        <td>{{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ reservation.reservation_date|date:"d/m/Y H:i" }}</td>
                                         <td>
-                                            {% if reservation.is_cancelled %}
+                                            {% if reservation.reservation_date <= now and reservation.status != 'CANCELLED' %}
+                                                <span class="badge bg-light text-dark border">
+                                                    <i class="bi bi-stopwatch"></i> {{ reservation.duration_formatted }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if reservation.status == 'CANCELLED' %}
                                                 <span class="badge bg-danger">
                                                     <i class="bi bi-x-circle"></i> Cancelada
                                                 </span>
-                                            {% elif reservation.start_datetime > now %}
-                                                <span class="badge bg-secondary">
-                                                    <i class="bi bi-clock"></i> Pendiente
-                                                </span>
-                                            {% elif reservation.end_datetime < now %}
+                                            {% elif reservation.status == 'COMPLETED' %}
                                                 <span class="badge bg-dark">
                                                     <i class="bi bi-check-circle"></i> Completada
+                                                </span>
+                                            {% elif reservation.reservation_date > now %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-clock"></i> Pendiente
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-success">
@@ -163,7 +171,7 @@
                                                    title="Ver Detalle">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                {% if not reservation.is_cancelled and reservation.end_datetime > now %}
+                                                {% if reservation.status != 'CANCELLED' and reservation.status != 'COMPLETED' %}
                                                     <a href="{% url 'parking:cancel_reservation' reservation.id %}" 
                                                        class="btn btn-outline-danger"
                                                        title="Cancelar">
