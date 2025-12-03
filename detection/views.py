@@ -13,7 +13,7 @@ from django.core.files.storage import FileSystemStorage
 BASE_DIR = settings.BASE_DIR
 MODEL_VEHICLE_PATH = os.path.join(BASE_DIR, 'detection', 'models', 'yolov10n.pt')
 MODEL_PLATE_PATH = os.path.join(BASE_DIR, 'detection', 'models', 'placa.pt')
-VIDEO_PATH = os.path.join(BASE_DIR, 'detection', 'videos', 'video.mp4')
+VIDEO_PATH = os.path.join(BASE_DIR, 'detection', 'videos')
 TESSERACT_CMD = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 # Configurar comando tesseract
@@ -44,7 +44,7 @@ def cropped(detections, image):
     cropped_image = image[ymin:ymax, xmin:xmax]
     return cropped_image
 
-def stream_video(source=VIDEO_PATH, detection_id=None):
+def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False):
     if isinstance(source, int):
         # Usar DirectShow para camara en Windows
         cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
@@ -159,6 +159,11 @@ def stream_video(source=VIDEO_PATH, detection_id=None):
 
     finally:
         cap.release()
+        if delete_source and isinstance(source, str) and os.path.exists(source):
+            try:
+                os.remove(source)
+            except Exception as e:
+                print(f"Error deleting file {source}: {e}")
 
 def video_feed(request):
     return StreamingHttpResponse(stream_video(VIDEO_PATH, detection_id='default_video'), content_type='multipart/x-mixed-replace; boundary=frame')
@@ -193,7 +198,7 @@ def upload_video(request):
 
 def uploaded_video_feed(request, filename):
     video_path = os.path.join(BASE_DIR, 'media', 'videos', filename)
-    return StreamingHttpResponse(stream_video(video_path, detection_id=f'upload_{filename}'), content_type='multipart/x-mixed-replace; boundary=frame')
+    return StreamingHttpResponse(stream_video(video_path, detection_id=f'upload_{filename}', delete_source=True), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def get_latest_plate(request):
     detection_id = request.GET.get('detection_id')
