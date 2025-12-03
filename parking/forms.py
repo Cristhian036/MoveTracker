@@ -279,25 +279,15 @@ class VehicleTariffForm(forms.ModelForm):
     """Formulario para modificar tarifas de vehículos"""
     class Meta:
         model = VehicleTariff
-        fields = ['rate_per_hour', 'description', 'custom_name']
+        fields = ['rate_per_hour']
         widgets = {
             'rate_per_hour': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.10',
                 'min': '0'
-            }),
-            'description': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: Tarifa estándar para autos'
-            }),
-            'custom_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: Sedan'
             })
         }
         labels = {
-            'rate_per_hour': 'Tarifa por Hora (S/)',
-            'description': 'Descripción (Opcional)',
-            'custom_name': 'Nombre del Tipo (Opcional)'
+            'rate_per_hour': 'Tarifa por Hora (S/)'
         }
 

@@ -399,6 +399,8 @@ class ParkingAssignment(models.Model):
     def complete_assignment(self, completed_by=None, payment_method=None):
         # Marca la asignacion como completada y genera boleta
         from django.utils import timezone
+        from django.db.models import Q
+        from django.apps import apps
         
         self.exit_time = timezone.now()
         self.status = self.AssignmentStatus.COMPLETED
@@ -415,6 +417,22 @@ class ParkingAssignment(models.Model):
         self.parking_space.save()
         
         self.save()
+
+        # Actualizar reserva asociada a COMPLETED
+        ParkingReservation = apps.get_model('parking', 'ParkingReservation')
+        
+        # Buscar reservas confirmadas que coincidan con el vehiculo/placa y espacio
+        reservations = ParkingReservation.objects.filter(
+            parking_space=self.parking_space,
+            status=ParkingReservation.ReservationStatus.CONFIRMED
+        ).filter(
+            Q(vehicle=self.vehicle) | 
+            Q(vehicle_plate=self.vehicle.license_plate)
+        )
+        
+        for reservation in reservations:
+            reservation.status = ParkingReservation.ReservationStatus.COMPLETED
+            reservation.save()
 
 
 class ParkingReservation(models.Model):

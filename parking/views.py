@@ -10,7 +10,8 @@ from .forms import (
     ParkingConfigurationForm, CheckoutForm, VehicleTariffForm
 )
 import math
-
+import openpyxl
+from django.http import HttpResponse
 
 def is_admin_or_worker(user):
     # Verifica permisos de administrador o trabajador
@@ -199,6 +200,10 @@ def quick_reservation(request):
             if not created and not vehicle.vehicle_type:
                 vehicle.vehicle_type = reservation.vehicle_type_temp
                 vehicle.save()
+            
+            # Asignar vehiculo a la reserva
+            reservation.vehicle = vehicle
+            reservation.save()
             
             assignment = ParkingAssignment(
                 vehicle=vehicle,
@@ -479,6 +484,69 @@ def assignment_list(request):
         'now': timezone.now()
     }
     return render(request, 'parking/assignment_list.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_worker, login_url='user:login')
+def export_assignments_excel(request):
+    # Exporta las asignaciones a Excel
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="reporte_salidas.xlsx"'
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Salidas"
+
+    # Encabezados
+    headers = [
+        'ID', 'Vehículo', 'Tipo', 'Espacio', 'Entrada', 'Salida', 
+        'Duración (min)', 'Costo (S/)', 'Estado', 'Método Pago', 'Boleta', 'Atendido Por'
+    ]
+    ws.append(headers)
+
+    # Filtros (mismos que en assignment_list)
+    assignments = ParkingAssignment.objects.select_related(
+        'vehicle', 'parking_space', 'parking_space__floor', 'assigned_by', 'completed_by'
+    ).all().order_by('-entry_time')
+    
+    search = request.GET.get('search', '')
+    status = request.GET.get('status', '')
+    
+    if search:
+        assignments = assignments.filter(
+            Q(vehicle__license_plate__icontains=search) |
+            Q(parking_space__space_number__icontains=search) |
+            Q(receipt_number__icontains=search)
+        )
+    
+    if status == 'active':
+        assignments = assignments.filter(status=ParkingAssignment.AssignmentStatus.ACTIVE)
+    elif status == 'completed':
+        assignments = assignments.filter(status=ParkingAssignment.AssignmentStatus.COMPLETED)
+
+    # Datos
+    for assignment in assignments:
+        duration = 0
+        if assignment.exit_time and assignment.entry_time:
+            duration = int((assignment.exit_time - assignment.entry_time).total_seconds() / 60)
+            
+        ws.append([
+            assignment.id,
+            assignment.vehicle.license_plate,
+            assignment.vehicle.get_vehicle_type_display(),
+            assignment.parking_space.full_code,
+            assignment.entry_time.strftime('%d/%m/%Y %H:%M') if assignment.entry_time else '-',
+            assignment.exit_time.strftime('%d/%m/%Y %H:%M') if assignment.exit_time else '-',
+            duration,
+            float(assignment.total_cost) if assignment.total_cost else 0.0,
+            assignment.get_status_display(),
+            assignment.get_payment_method_display() if assignment.payment_method else '-',
+            assignment.receipt_number or '-',
+            assignment.completed_by.username if assignment.completed_by else '-'
+        ])
+
+    wb.save(response)
+    return response
 
 
 @login_required

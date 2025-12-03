@@ -142,8 +142,8 @@ INSERT INTO "auth_group" VALUES (1,'administrador');
 INSERT INTO "auth_group" VALUES (2,'trabajador');
 INSERT INTO "auth_group" VALUES (3,'usuario');
 
-INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (1,'car',3.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
-INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (2,'camioneta',5.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
-INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (3,'moto',2.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
+INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (1,'CAR',3.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
+INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (2,'TRUCK',5.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
+INSERT INTO "parking_vehicletariff" (id,vehicle_type,rate_per_hour,is_active,created_at,updated_at) VALUES (3,'MOTORCYCLE',2.00,1,'2025-10-18 00:00:00','2025-10-18 00:00:00');
 INSERT INTO "parking_parkingconfiguration" (id,total_floors,spaces_per_floor,is_active,created_at,updated_at,created_by_id) VALUES (1,3,50,1,'2025-10-18 00:00:00','2025-10-18 00:00:00',1);
 

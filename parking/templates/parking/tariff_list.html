@@ -21,7 +21,6 @@
                         <thead>
                             <tr>
                                 <th>Tipo de Vehículo</th>
-                                <th>Descripción</th>
                                 <th>Tarifa Actual (S/)</th>
                                 <th>Acciones</th>
                             </tr>
@@ -43,9 +42,6 @@
                                                 <i class="bi bi-bicycle"></i> {{ tariff.custom_name|default:tariff.get_vehicle_type_display }}
                                             </span>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        {{ tariff.description|default:"-" }}
                                     </td>
                                     <td>
                                         <strong>S/ {{ tariff.rate_per_hour }}</strong>
@@ -70,22 +66,6 @@
                                                         {% csrf_token %}
                                                         <input type="hidden" name="tariff_id" value="{{ tariff.id }}">
                                                         <div class="modal-body">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Nombre del Tipo (Personalizado)</label>
-                                                                <input type="text" 
-                                                                       name="custom_name" 
-                                                                       class="form-control" 
-                                                                       value="{{ tariff.custom_name|default:'' }}"
-                                                                       placeholder="Ej: Sedan (dejar vacío para usar '{{ tariff.get_vehicle_type_display }}')">
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Descripción</label>
-                                                                <input type="text" 
-                                                                       name="description" 
-                                                                       class="form-control" 
-                                                                       value="{{ tariff.description|default:'' }}"
-                                                                       placeholder="Ej: Tarifa estándar">
-                                                            </div>
                                                             <div class="mb-3">
                                                                 <label class="form-label">Tarifa por Hora (S/)</label>
                                                                 <input type="number" 

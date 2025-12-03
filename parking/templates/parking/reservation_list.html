@@ -50,7 +50,6 @@
                         <select class="form-control" id="status" name="status">
                             <option value="">Todos</option>
                             <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pendiente</option>
-                            <option value="active" {% if status == 'active' %}selected{% endif %}>Confirmada</option>
                             <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completada</option>
                             <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelada</option>
                         </select>

@@ -124,7 +124,9 @@
 <body>
     <div class="print-button no-print">
         <button onclick="window.print()">🖨️ Imprimir Boleta</button>
-        <button onclick="window.close()" style="background: #6c757d; margin-left: 10px;">❌ Cerrar</button>
+        <a href="{% url 'parking:assignment_list' %}" style="text-decoration: none;">
+            <button style="background: #6c757d; margin-left: 10px;">❌ Cerrar</button>
+        </a>
     </div>
     
     <div class="receipt">

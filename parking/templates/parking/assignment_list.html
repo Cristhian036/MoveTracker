@@ -41,6 +41,11 @@
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                     </div>
+                    <div class="col-md-12 d-flex justify-content-end mt-2">
+                        <a href="{% url 'parking:export_assignments_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

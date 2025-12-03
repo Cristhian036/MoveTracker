@@ -21,6 +21,7 @@ urlpatterns = [
     
     # Asignaciones y Checkout
     path('assignments/', views.assignment_list, name='assignment_list'),
+    path('assignments/export/', views.export_assignments_excel, name='export_assignments_excel'),
     path('assignments/<int:pk>/checkout/', views.checkout, name='checkout'),
     path('assignments/<int:pk>/receipt/', views.print_receipt, name='print_receipt'),
     
