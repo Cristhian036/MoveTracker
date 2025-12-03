@@ -13,17 +13,17 @@ def create_initial_data(apps, schema_editor):
     # Crear tarifas para cada tipo de vehículo (por hora)
     tariffs = [
         {
-            'vehicle_type': 'car',
+            'vehicle_type': 'CAR',
             'rate_per_hour': Decimal('3.00'),
             'is_active': True,
         },
         {
-            'vehicle_type': 'camioneta',
+            'vehicle_type': 'TRUCK',
             'rate_per_hour': Decimal('5.00'),
             'is_active': True,
         },
         {
-            'vehicle_type': 'moto',
+            'vehicle_type': 'MOTORCYCLE',
             'rate_per_hour': Decimal('2.00'),
             'is_active': True,
         },

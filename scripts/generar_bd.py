@@ -12,7 +12,7 @@ import django
 from django.core.management import call_command
 
 def main():
-    SQL_FILE = BASE_DIR / 'db.sql'
+    SQL_FILE = BASE_DIR / 'bd.sql'
     DB_FILE = BASE_DIR / 'bd.sqlite3'
 
     if not SQL_FILE.exists():
