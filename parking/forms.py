@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration
+from .models import Vehicle, ParkingReservation, VehicleType, ParkingConfiguration, ParkingAssignment
 
 User = get_user_model()
 
@@ -93,7 +93,7 @@ class VehicleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtrar solo usuarios activos
+        # Filtrar usuarios activos
         self.fields['owner'].queryset = User.objects.filter(is_active=True)
 
 
@@ -120,9 +120,9 @@ class AssignVehicleForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Mostrar solo vehículos con propietario
+        # Mostrar vehiculos con propietario
         self.fields['vehicle'].queryset = Vehicle.objects.select_related('owner').all()
-        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()} ({obj.owner.get_full_name() or obj.owner.username})"
+        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()} ({obj.owner.get_full_name() if obj.owner else 'Sin propietario'})"
 
 
 class NormalReservationForm(forms.ModelForm):
@@ -160,14 +160,15 @@ class NormalReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Solo mostrar vehículos registrados
+        # Mostrar vehiculos registrados
         self.fields['vehicle'].queryset = Vehicle.objects.select_related('owner').all()
         self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.license_plate} - {obj.get_vehicle_type_display()}"
         
-        # Solo mostrar espacios disponibles
+        # Mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
 
@@ -219,21 +220,56 @@ class QuickReservationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Campos obligatorios según requerimiento
+        # Marcar como reserva rapida
+        self.instance.is_quick_reservation = True
+        
+        # Campos obligatorios
         self.fields['vehicle_type_temp'].required = True
         self.fields['parking_space'].required = True
         self.fields['reservation_date'].required = True
         
-        # Campos opcionales y ocultos
+        # Campos opcionales
         self.fields['customer_name'].required = False
         self.fields['customer_phone'].required = False
         self.fields['customer_email'].required = False
         self.fields['vehicle_plate'].required = False
         self.fields['notes'].required = False
 
-        # Solo mostrar espacios disponibles
+        # Mostrar espacios disponibles
         from .models import ParkingSpace
         self.fields['parking_space'].queryset = ParkingSpace.objects.filter(
-            status=ParkingSpace.SpaceStatus.AVAILABLE
+            status=ParkingSpace.SpaceStatus.AVAILABLE,
+            is_active=True
         ).select_related('floor')
         self.fields['parking_space'].label_from_instance = lambda obj: f"Piso {obj.floor.floor_number} - Espacio {obj.space_number}"
+
+
+class CheckoutForm(forms.ModelForm):
+    """Formulario para registrar la salida y pago de un vehículo"""
+    
+    class Meta:
+        model = ParkingAssignment
+        fields = ['payment_method', 'notes']
+        widgets = {
+            'payment_method': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Observaciones adicionales (opcional)'
+            }),
+        }
+        labels = {
+            'payment_method': 'Método de Pago',
+            'notes': 'Observaciones',
+        }
+        help_texts = {
+            'notes': 'Información adicional sobre el pago o la salida'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['payment_method'].required = True
+        self.fields['notes'].required = False

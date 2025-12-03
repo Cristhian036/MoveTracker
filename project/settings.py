@@ -21,6 +21,7 @@ AUTH_USER_MODEL = 'user.User'
 INSTALLED_APPS = [
     'user.apps.UserConfig',
     'parking.apps.ParkingConfig',
+    'detection.apps.DetectionConfig',
 
     'crispy_forms',
     'crispy_bootstrap3',
@@ -117,9 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-pe'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 

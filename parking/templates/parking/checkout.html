@@ -1,0 +1,134 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-box-arrow-right"></i> {{ title }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-cash-coin"></i> Registrar Salida y Pago
+            </div>
+            <div class="card-body">
+                <!-- Información del Vehículo -->
+                <h5 class="mb-3">
+                    <i class="bi bi-car-front"></i> Información del Vehículo
+                </h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Placa:</strong></td>
+                        <td>{{ assignment.vehicle.license_plate }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tipo:</strong></td>
+                        <td>{{ assignment.vehicle.get_vehicle_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Espacio:</strong></td>
+                        <td>{{ assignment.parking_space.full_code }} (Piso {{ assignment.parking_space.floor.floor_number }})</td>
+                    </tr>
+                </table>
+
+                <hr>
+
+                <!-- Información de Tiempo -->
+                <h5 class="mb-3">
+                    <i class="bi bi-clock"></i> Tiempo de Estacionamiento
+                </h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Entrada:</strong></td>
+                        <td>{{ assignment.entry_time|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Salida:</strong></td>
+                        <td>{{ now|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Duración:</strong></td>
+                        <td>
+                            <span class="badge bg-info" style="font-size: 1rem;">
+                                {{ hours_parked }} horas
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr>
+
+                <!-- Cálculo de Costo -->
+                <h5 class="mb-3">
+                    <i class="bi bi-calculator"></i> Cálculo de Costo
+                </h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Tarifa por Hora:</strong></td>
+                        <td>S/ {{ tariff.rate_per_hour|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Horas Cobradas:</strong></td>
+                        <td>{{ hours_parked }} hora(s)</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td><strong>Total a Pagar:</strong></td>
+                        <td>
+                            <h4 class="text-success mb-0">
+                                S/ {{ total_cost|floatformat:2 }}
+                            </h4>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr>
+
+                <!-- Formulario de Pago -->
+                <h5 class="mb-3">
+                    <i class="bi bi-credit-card"></i> Método de Pago
+                </h5>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                            {{ form.payment_method.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.payment_method }}
+                        {% if form.payment_method.errors %}
+                            <div class="invalid-feedback d-block">{{ form.payment_method.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.help_text %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">{{ form.notes.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'parking:assignment_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Registrar Salida y Generar Boleta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
