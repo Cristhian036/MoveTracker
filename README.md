@@ -8,26 +8,6 @@ Django 4.2 • Python 3.x • SQLite • REST API
 
 ## 📦 Instalación
 
-### 🐳 Con Docker (Recomendado)
-
-```bash
-# Clonar repositorio
-git clone https://github.com/Cristhian036/MoveTracker.git
-cd MoveTracker
-
-# Construir y ejecutar contenedores
-docker-compose up --build
-
-# Crear superusuario (en otra terminal)
-docker-compose exec web python manage.py createsuperuser
-```
-
-**Acceso:** 
-- Aplicación: http://localhost:8000
-- Admin: http://localhost:8000/admin
-
-### 💻 Instalación Manual
-
 ```bash
 # Crear entorno virtual
 python -m venv env
