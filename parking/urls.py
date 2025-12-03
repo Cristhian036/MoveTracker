@@ -26,4 +26,5 @@ urlpatterns = [
     
     # Configuración
     path('configuration/spaces/', views.space_configuration, name='space_configuration'),
+    path('configuration/tariffs/', views.tariff_list, name='tariff_list'),
 ]

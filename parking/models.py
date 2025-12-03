@@ -72,6 +72,18 @@ class VehicleTariff(models.Model):
         verbose_name='Tarifa por Hora (S/)',
         help_text='Costo por hora de estacionamiento en Soles'
     )
+    custom_name = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name='Nombre Personalizado',
+        help_text='Nombre para mostrar en lugar del tipo por defecto (ej: "Sedan" en vez de "Auto")'
+    )
+    description = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Descripción',
+        help_text='Nombre personalizado para mostrar en la tarifa (opcional)'
+    )
     is_active = models.BooleanField(default=True, verbose_name='Tarifa Activa')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Creación')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Última Actualización')
@@ -538,9 +550,18 @@ class ParkingReservation(models.Model):
         
         # Si no es reserva rápida, debe tener usuario y vehículo
         if not self.is_quick_reservation:
-            if not self.user or not self.vehicle:
-                raise ValidationError(
-                    'Para reservas normales se requiere usuario y vehículo registrado. '
+            # Si tiene vehículo pero no usuario, intentamos obtener el dueño del vehículo
+            if self.vehicle and not self.user:
+                if self.vehicle.owner:
+                    self.user = self.vehicle.owner
+                else:
+                    # Si el vehículo no tiene dueño, permitimos la reserva pero advertimos o manejamos
+                    # En este caso, permitimos que se guarde sin usuario si hay vehículo
+                    pass
+
+            if not self.vehicle:
+                 raise ValidationError(
+                    'Para reservas normales se requiere un vehículo registrado. '
                     'Marque como "Reserva Rápida" si desea crear una reserva manual.'
                 )
         else:

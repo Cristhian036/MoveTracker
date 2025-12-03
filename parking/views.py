@@ -7,7 +7,7 @@ from .models import Vehicle, ParkingReservation, ParkingSpace, VehicleType, Park
 from .forms import (
     VehicleForm, AssignVehicleForm, 
     NormalReservationForm, QuickReservationForm,
-    ParkingConfigurationForm, CheckoutForm
+    ParkingConfigurationForm, CheckoutForm, VehicleTariffForm
 )
 import math
 
@@ -578,3 +578,28 @@ def print_receipt(request, pk):
         'now': timezone.now()
     }
     return render(request, 'parking/receipt.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or (u.groups.filter(name='admin').exists()), login_url='user:login')
+def tariff_list(request):
+    # Lista y permite editar las tarifas
+    tariffs = VehicleTariff.objects.filter(is_active=True)
+    
+    if request.method == 'POST':
+        tariff_id = request.POST.get('tariff_id')
+        tariff = get_object_or_404(VehicleTariff, id=tariff_id)
+        form = VehicleTariffForm(request.POST, instance=tariff)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Tarifa para {tariff.get_vehicle_type_display()} actualizada.')
+            return redirect('parking:tariff_list')
+        else:
+            messages.error(request, 'Error al actualizar la tarifa.')
+    
+    context = {
+        'tariffs': tariffs,
+        'title': 'Gestión de Tarifas'
+    }
+    return render(request, 'parking/tariff_list.html', context)
+

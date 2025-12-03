@@ -74,7 +74,7 @@
                                     <th>Color</th>
                                     <th>Propietario</th>
                                     <th>Registrado Por</th>
-                                    <th>Fecha Registro</th>
+                                    <th>Última Actualización</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,7 +106,7 @@
                                             {% if vehicle.owner %}{{ vehicle.owner.get_full_name|default:vehicle.owner.username }}{% else %}-{% endif %}
                                         </td>
                                         <td>{% if vehicle.registered_by %}{{ vehicle.registered_by.username }}{% else %}-{% endif %}</td>
-                                        <td>{{ vehicle.registered_at|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ vehicle.updated_at|date:"d/m/Y H:i" }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

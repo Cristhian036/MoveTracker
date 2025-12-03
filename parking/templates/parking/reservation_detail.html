@@ -168,22 +168,28 @@
                         <td width="200"><strong>Espacio:</strong></td>
                         <td>
                             <span class="badge bg-primary">
-                                Piso {{ reservation.reserved_space.floor.floor_number }} - Espacio {{ reservation.reserved_space.space_number }}
+                                Piso {{ reservation.parking_space.floor.floor_number }} - Espacio {{ reservation.parking_space.space_number }}
                             </span>
                         </td>
                     </tr>
                     <tr>
                         <td><strong>Fecha/Hora Inicio:</strong></td>
-                        <td><i class="bi bi-calendar-check"></i> {{ reservation.start_datetime|date:"d/m/Y H:i" }}</td>
+                        <td><i class="bi bi-calendar-check"></i> {{ reservation.reservation_date|date:"d/m/Y H:i" }}</td>
                     </tr>
                     <tr>
                         <td><strong>Fecha/Hora Fin:</strong></td>
-                        <td><i class="bi bi-calendar-x"></i> {{ reservation.end_datetime|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if reservation.status == 'CONFIRMED' or reservation.status == 'PENDING' %}
+                                <span class="badge bg-secondary">Pendiente</span>
+                            {% else %}
+                                <i class="bi bi-calendar-x"></i> {{ reservation.updated_at|date:"d/m/Y H:i" }}
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <td><strong>Duración:</strong></td>
                         <td>
-                            {% widthratio reservation.end_datetime|timeuntil:reservation.start_datetime 1 1 %} horas aprox.
+                            {{ reservation.duration_formatted }} aprox.
                         </td>
                     </tr>
                     {% if reservation.notes %}

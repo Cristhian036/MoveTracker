@@ -1,0 +1,118 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}{{ title }} - Sistema de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-currency-dollar"></i> {{ title }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                Tarifas por Hora
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Vehículo</th>
+                                <th>Descripción</th>
+                                <th>Tarifa Actual (S/)</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tariff in tariffs %}
+                                <tr>
+                                    <td>
+                                        {% if tariff.vehicle_type == 'CAR' %}
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-car-front"></i> {{ tariff.custom_name|default:tariff.get_vehicle_type_display }}
+                                            </span>
+                                        {% elif tariff.vehicle_type == 'TRUCK' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-truck"></i> {{ tariff.custom_name|default:tariff.get_vehicle_type_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-bicycle"></i> {{ tariff.custom_name|default:tariff.get_vehicle_type_display }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ tariff.description|default:"-" }}
+                                    </td>
+                                    <td>
+                                        <strong>S/ {{ tariff.rate_per_hour }}</strong>
+                                    </td>
+                                    <td>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editTariffModal{{ tariff.id }}">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </button>
+
+                                        <!-- Modal Editar -->
+                                        <div class="modal fade" id="editTariffModal{{ tariff.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Editar Tarifa - {{ tariff.get_vehicle_type_display }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form method="post">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="tariff_id" value="{{ tariff.id }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Nombre del Tipo (Personalizado)</label>
+                                                                <input type="text" 
+                                                                       name="custom_name" 
+                                                                       class="form-control" 
+                                                                       value="{{ tariff.custom_name|default:'' }}"
+                                                                       placeholder="Ej: Sedan (dejar vacío para usar '{{ tariff.get_vehicle_type_display }}')">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Descripción</label>
+                                                                <input type="text" 
+                                                                       name="description" 
+                                                                       class="form-control" 
+                                                                       value="{{ tariff.description|default:'' }}"
+                                                                       placeholder="Ej: Tarifa estándar">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Tarifa por Hora (S/)</label>
+                                                                <input type="number" 
+                                                                       name="rate_per_hour" 
+                                                                       class="form-control" 
+                                                                       step="0.10" 
+                                                                       min="0" 
+                                                                       value="{{ tariff.rate_per_hour }}" 
+                                                                       required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
