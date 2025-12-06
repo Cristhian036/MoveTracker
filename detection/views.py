@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import StreamingHttpResponse, JsonResponse
 from django.conf import settings
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -263,7 +263,7 @@ def live_feed(request):
     return StreamingHttpResponse(stream_video(camera_index, detection_id=f'live_{camera_index}'), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def index(request):
-    return render(request, 'detection/index.html')
+    return redirect('/')
 
 def live_camera(request):
     return render(request, 'detection/live_camera.html')
@@ -273,7 +273,17 @@ import base64
 @ensure_csrf_cookie
 def upload_video(request):
     if request.method == 'POST':
-        # Opcion 1: Ruta local (Prioridad)
+        # Opcion 1: Subida de archivo (Prioridad)
+        if request.FILES.get('video_file'):
+            video_file = request.FILES['video_file']
+            fs = FileSystemStorage(location=os.path.join(BASE_DIR, 'media', 'videos'))
+            filename = fs.save(video_file.name, video_file)
+            return render(request, 'detection/upload_video.html', {
+                'uploaded_video_url': filename,
+                'video_name': video_file.name
+            })
+        
+        # Opcion 2: Ruta local (Legacy)
         video_path = request.POST.get('video_path')
         if video_path:
             # Limpiar comillas si el usuario copio como ruta
@@ -288,47 +298,34 @@ def upload_video(request):
                 })
             else:
                 return render(request, 'detection/upload_video.html', {'error': 'El archivo no existe en la ruta especificada.'})
-
-        # Opcion 2: Subida de archivo (Legacy / Fallback)
-        elif request.FILES.get('video_file'):
-            video_file = request.FILES['video_file']
-            fs = FileSystemStorage(location=os.path.join(BASE_DIR, 'media', 'videos'))
-            filename = fs.save(video_file.name, video_file)
-            return render(request, 'detection/upload_video.html', {
-                'uploaded_video_url': filename
-            })
             
     return render(request, 'detection/upload_video.html')
 
 def uploaded_video_feed(request, filename):
     video_path = None
+    should_delete = False
     
     # Intentar decodificar como ruta local (base64)
     try:
         decoded_path = base64.urlsafe_b64decode(filename).decode()
         if os.path.exists(decoded_path):
             video_path = decoded_path
+            should_delete = False
     except Exception:
         pass
     
-    # Si no es ruta local, buscar en media/videos
+    # Si no es ruta local, buscar en media/videos (es un archivo subido)
     if not video_path:
         video_path = os.path.join(BASE_DIR, 'media', 'videos', filename)
+        should_delete = True
 
     try:
         start_frame = int(request.GET.get('start_frame', 0))
     except ValueError:
         start_frame = 0
         
-    # delete_source=False siempre, ya que ahora leemos del disco original o media persistente
-    return StreamingHttpResponse(stream_video(video_path, detection_id=f'upload_{filename}', delete_source=False, start_frame=start_frame), content_type='multipart/x-mixed-replace; boundary=frame')
-    video_path = os.path.join(BASE_DIR, 'media', 'videos', filename)
-    try:
-        start_frame = int(request.GET.get('start_frame', 0))
-    except ValueError:
-        start_frame = 0
-    # delete_source=False para permitir pausar/reanudar sin perder el archivo
-    return StreamingHttpResponse(stream_video(video_path, detection_id=f'upload_{filename}', delete_source=False, start_frame=start_frame), content_type='multipart/x-mixed-replace; boundary=frame')
+    # delete_source=True si es un archivo subido, False si es ruta local
+    return StreamingHttpResponse(stream_video(video_path, detection_id=f'upload_{filename}', delete_source=should_delete, start_frame=start_frame), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def get_latest_plate(request):
     detection_id = request.GET.get('detection_id')

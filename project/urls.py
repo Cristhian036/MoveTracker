@@ -1,7 +1,9 @@
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path, include, re_path
+from django.conf import settings
 from user import views as user_view
 from django.contrib.auth import views as auth
+from project import views as project_views
 
 from .router import router
 from rest_framework.authtoken import views
@@ -26,5 +28,11 @@ urlpatterns = [
     path('detection/',include('detection.urls')),
 
 ]
+
+# Habilitar vista 404 personalizada en modo DEBUG
+if settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^.*$', project_views.custom_page_not_found, kwargs={'exception': Exception("Page not Found")}),
+    ]
 
 handler404 = 'project.views.custom_page_not_found'

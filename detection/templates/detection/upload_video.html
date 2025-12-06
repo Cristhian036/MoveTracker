@@ -18,13 +18,13 @@
                     {% if error %}
                         <div class="alert alert-danger">{{ error }}</div>
                     {% endif %}
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="video_path" class="form-label">Ruta del archivo de video</label>
-                            <input class="form-control" type="text" id="video_path" name="video_path" placeholder="Ej: C:\Videos\trafico.mp4" required>
+                            <label for="video_file" class="form-label">Seleccionar archivo de video</label>
+                            <input class="form-control" type="file" id="video_file" name="video_file" accept="video/*" required>
                             <div class="form-text text-muted">
-                                <i class="bi bi-info-circle"></i> El video se leerá directamente desde su ubicación original sin guardarse en el servidor.
+                                <i class="bi bi-info-circle"></i> Seleccione un video desde su dispositivo.
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">

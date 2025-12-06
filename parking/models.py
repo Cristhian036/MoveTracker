@@ -644,3 +644,17 @@ class ParkingReservation(models.Model):
         if hours > 0:
             return f"{hours}h {minutes}m"
         return f"{minutes}m"
+
+    @property
+    def start_datetime(self):
+        return self.reservation_date
+
+    @property
+    def end_datetime(self):
+        from datetime import timedelta
+        return self.reservation_date + timedelta(minutes=self.duration_minutes)
+
+    @property
+    def is_cancelled(self):
+        return self.status == self.ReservationStatus.CANCELLED
+
