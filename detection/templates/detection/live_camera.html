@@ -26,6 +26,8 @@
                     <img id="cameraFeed" src="{% url 'live_feed' %}" class="img-fluid" style="max-height: 720px;" alt="Live Camera Feed" />
                     <div class="mt-3">
                         <h4>Placa Detectada: <span id="detected-plate" class="badge bg-success">Esperando...</span></h4>
+                        <h4>Confianza: <span id="detected-confidence" class="badge bg-secondary">0.00</span></h4>
+                        <h4>Vehículo: <span id="detected-vehicle" class="badge bg-info">Esperando...</span></h4>
                     </div>
                 </div>
             </div>
@@ -52,6 +54,12 @@
         .then(data => {
             if (data.plate) {
                 document.getElementById('detected-plate').innerText = data.plate;
+            }
+            if (data.confidence) {
+                document.getElementById('detected-confidence').innerText = data.confidence.toFixed(2);
+            }
+            if (data.vehicle_type) {
+                document.getElementById('detected-vehicle').innerText = data.vehicle_type;
             }
         });
     }, 1000);

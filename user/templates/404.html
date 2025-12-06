@@ -1,0 +1,16 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}Página no encontrada - MoveTracker{% endblock %}
+
+{% block content %}
+<div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="text-center">
+        <h1 class="display-1 fw-bold text-primary">404</h1>
+        <h2 class="mb-4">Página no encontrada</h2>
+        <p class="lead text-muted mb-5">Lo sentimos, la página que estás buscando no existe o ha sido movida.</p>
+        <a href="{% url 'index' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-house-fill me-2"></i>Volver al Inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

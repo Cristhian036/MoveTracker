@@ -26,3 +26,5 @@ urlpatterns = [
     path('detection/',include('detection.urls')),
 
 ]
+
+handler404 = 'project.views.custom_page_not_found'

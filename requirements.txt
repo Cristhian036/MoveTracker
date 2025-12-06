@@ -8,3 +8,4 @@ supervision
 pytesseract
 numpy
 openpyxl
+easyocr

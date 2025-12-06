@@ -12,17 +12,23 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    Subir Video
+                    Cargar Video Local
                 </div>
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="video_file" class="form-label">Seleccionar archivo de video</label>
-                            <input class="form-control" type="file" id="video_file" name="video_file" accept="video/*" required>
+                            <label for="video_path" class="form-label">Ruta del archivo de video</label>
+                            <input class="form-control" type="text" id="video_path" name="video_path" placeholder="Ej: C:\Videos\trafico.mp4" required>
+                            <div class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> El video se leerá directamente desde su ubicación original sin guardarse en el servidor.
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-upload"></i> Subir y Analizar
+                            <i class="bi bi-play-circle"></i> Cargar y Analizar
                         </button>
                     </form>
                 </div>
@@ -32,21 +38,81 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    Resultado de Detección
+                    Resultado de Detección {% if video_name %}- {{ video_name }}{% endif %}
                 </div>
                 <div class="card-body text-center">
                     {% if uploaded_video_url %}
-                        <img src="{% url 'uploaded_video_feed' uploaded_video_url %}" class="img-fluid" style="max-width: 100%; max-height: 720px; width: auto; height: auto;" alt="Uploaded Video Feed" />
+                        <div class="position-relative">
+                            <img id="videoFeed" src="{% url 'uploaded_video_feed' uploaded_video_url %}" class="img-fluid" style="max-width: 100%; max-height: 720px; width: auto; height: auto;" alt="Uploaded Video Feed" />
+                            <canvas id="videoCanvas" class="img-fluid" style="max-width: 100%; max-height: 720px; width: auto; height: auto; display: none;"></canvas>
+                        </div>
                         <div class="mt-3">
+                            <button id="playPauseBtn" class="btn btn-warning w-100 mb-3">
+                                <i class="bi bi-pause-fill"></i> Pausar
+                            </button>
                             <h4>Placa Detectada: <span id="detected-plate" class="badge bg-success">Esperando...</span></h4>
+                            <h4>Confianza: <span id="detected-confidence" class="badge bg-secondary">0.00</span></h4>
+                            <h4>Vehículo: <span id="detected-vehicle" class="badge bg-info">Esperando...</span></h4>
                         </div>
                         <script>
+                            var isPlaying = true;
+                            var currentFrame = 0;
+                            var videoUrl = "{% url 'uploaded_video_feed' uploaded_video_url %}";
+                            var img = document.getElementById('videoFeed');
+                            var canvas = document.getElementById('videoCanvas');
+                            var btn = document.getElementById('playPauseBtn');
+
+                            btn.addEventListener('click', function() {
+                                if (isPlaying) {
+                                    // Pausar
+                                    // 1. Dibujar frame actual en canvas
+                                    canvas.width = img.naturalWidth;
+                                    canvas.height = img.naturalHeight;
+                                    var ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0);
+                                    
+                                    // 2. Mostrar canvas, ocultar img
+                                    img.style.display = 'none';
+                                    canvas.style.display = 'block';
+                                    
+                                    // 3. Detener stream
+                                    img.src = "";
+                                    
+                                    btn.innerHTML = '<i class="bi bi-play-fill"></i> Reanudar';
+                                    btn.classList.remove('btn-warning');
+                                    btn.classList.add('btn-success');
+                                    isPlaying = false;
+                                } else {
+                                    // Reanudar
+                                    // 1. Mostrar img, ocultar canvas
+                                    canvas.style.display = 'none';
+                                    img.style.display = 'block';
+                                    
+                                    // 2. Reiniciar stream
+                                    img.src = videoUrl + "?start_frame=" + currentFrame + "&t=" + new Date().getTime();
+                                    
+                                    btn.innerHTML = '<i class="bi bi-pause-fill"></i> Pausar';
+                                    btn.classList.remove('btn-success');
+                                    btn.classList.add('btn-warning');
+                                    isPlaying = true;
+                                }
+                            });
+
                             setInterval(function() {
                                 fetch("{% url 'get_latest_plate' %}?detection_id=upload_{{ uploaded_video_url }}")
                                 .then(response => response.json())
                                 .then(data => {
                                     if (data.plate) {
                                         document.getElementById('detected-plate').innerText = data.plate;
+                                    }
+                                    if (data.confidence) {
+                                        document.getElementById('detected-confidence').innerText = data.confidence.toFixed(2);
+                                    }
+                                    if (data.vehicle_type) {
+                                        document.getElementById('detected-vehicle').innerText = data.vehicle_type;
+                                    }
+                                    if (data.current_frame) {
+                                        currentFrame = data.current_frame;
                                     }
                                 });
                             }, 1000);
