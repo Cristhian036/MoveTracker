@@ -26,7 +26,7 @@ urlpatterns = [
     #####parking related path##########################
     path('parking/',include('parking.urls')),
     path('detection/',include('detection.urls')),
-
+    # Force reload
 ]
 
 # Habilitar vista 404 personalizada en modo DEBUG

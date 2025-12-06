@@ -123,9 +123,9 @@
 </head>
 <body>
     <div class="print-button no-print">
-        <button onclick="window.print()">🖨️ Imprimir Boleta</button>
+        <button onclick="window.print()">Imprimir Boleta</button>
         <a href="{% url 'parking:assignment_list' %}" style="text-decoration: none;">
-            <button style="background: #6c757d; margin-left: 10px;">❌ Cerrar</button>
+            <button style="background: #6c757d; margin-left: 10px;">Cerrar</button>
         </a>
     </div>
     
@@ -166,7 +166,7 @@
             </div>
             <div class="row">
                 <span class="label">Duración:</span>
-                <span class="value">{{ hours_parked }} hora(s)</span>
+                <span class="value">{{ formatted_actual_duration }}</span>
             </div>
         </div>
         
@@ -178,7 +178,7 @@
             </div>
             <div class="row">
                 <span class="label">Horas:</span>
-                <span class="value">{{ hours_parked }}</span>
+                <span class="value">{{ formatted_duration }}</span>
             </div>
             <div class="row">
                 <span class="label">Método:</span>

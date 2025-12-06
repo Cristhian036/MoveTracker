@@ -11,6 +11,7 @@ from .forms import (
 )
 import math
 import openpyxl
+from decimal import Decimal
 from django.http import HttpResponse
 
 def is_admin_or_worker(user):
@@ -342,6 +343,42 @@ def cancel_reservation(request, pk):
         reservation.status = ParkingReservation.ReservationStatus.CANCELLED
         reservation.save()
         
+        # Buscar y cancelar asignacion activa asociada si existe
+        from django.db.models import Q
+        active_assignments = ParkingAssignment.objects.filter(
+            parking_space=reservation.parking_space,
+            status=ParkingAssignment.AssignmentStatus.ACTIVE
+        ).filter(
+            Q(vehicle=reservation.vehicle) | 
+            Q(vehicle__license_plate=reservation.vehicle_plate)
+        )
+        
+        for assignment in active_assignments:
+            assignment.status = ParkingAssignment.AssignmentStatus.CANCELLED
+            assignment.exit_time = timezone.now()
+            assignment.save()
+            
+            # Liberar espacio
+            assignment.parking_space.status = ParkingSpace.SpaceStatus.AVAILABLE
+            assignment.parking_space.save()
+        
+        # Si no habia asignacion pero el espacio estaba reservado/ocupado por esta reserva
+        if not active_assignments.exists() and reservation.parking_space.status != ParkingSpace.SpaceStatus.AVAILABLE:
+             # Verificar si hay otras reservas activas para este espacio antes de liberar
+             other_active = ParkingReservation.objects.filter(
+                 parking_space=reservation.parking_space,
+                 status__in=[ParkingReservation.ReservationStatus.CONFIRMED, ParkingReservation.ReservationStatus.PENDING]
+             ).exclude(pk=reservation.pk).exists()
+             
+             other_assignments = ParkingAssignment.objects.filter(
+                 parking_space=reservation.parking_space,
+                 status=ParkingAssignment.AssignmentStatus.ACTIVE
+             ).exists()
+             
+             if not other_active and not other_assignments:
+                 reservation.parking_space.status = ParkingSpace.SpaceStatus.AVAILABLE
+                 reservation.parking_space.save()
+        
         messages.success(request, f'Reserva #{reservation.id} cancelada exitosamente.')
         return redirect('parking:reservation_list')
     
@@ -459,7 +496,7 @@ def assignment_list(request):
     # Lista las asignaciones de estacionamiento
     assignments = ParkingAssignment.objects.select_related(
         'vehicle', 'parking_space', 'parking_space__floor', 'assigned_by', 'completed_by'
-    ).all().order_by('-entry_time')
+    ).all().order_by('-id')
     
     search = request.GET.get('search', '')
     status = request.GET.get('status', '')
@@ -484,6 +521,23 @@ def assignment_list(request):
         'now': timezone.now()
     }
     return render(request, 'parking/assignment_list.html', context)
+
+
+def format_duration(decimal_hours):
+    """Convierte horas decimales a formato legible (ej: 1.5 -> 1 hr 30 min)"""
+    hours = int(decimal_hours)
+    minutes = int((decimal_hours - hours) * 60)
+    
+    parts = []
+    if hours > 0:
+        parts.append(f"{hours} hr")
+    if minutes > 0:
+        parts.append(f"{minutes} min")
+        
+    if not parts:
+        return "0 min"
+        
+    return " ".join(parts)
 
 
 @login_required
@@ -565,7 +619,10 @@ def checkout(request, pk):
     now = timezone.now()
     duration = now - assignment.entry_time
     total_minutes = duration.total_seconds() / 60
-    hours_parked = math.ceil(total_minutes / 60)
+    
+    # Calculo de horas para mostrar (fracciones de 30 min)
+    half_hours = math.ceil(total_minutes / 30)
+    hours_to_charge = Decimal(str(half_hours)) * Decimal('0.5')
     
     try:
         tariff = VehicleTariff.objects.get(
@@ -576,8 +633,7 @@ def checkout(request, pk):
         messages.error(request, f'No se encontró tarifa para el tipo de vehículo {assignment.vehicle.get_vehicle_type_display()}.')
         return redirect('parking:assignment_list')
     
-    from decimal import Decimal
-    total_cost = Decimal(str(hours_parked)) * tariff.rate_per_hour
+    total_cost = hours_to_charge * tariff.rate_per_hour
     
     if request.method == 'POST':
         form = CheckoutForm(request.POST, instance=assignment)
@@ -603,7 +659,9 @@ def checkout(request, pk):
         'assignment': assignment,
         'title': f'Salida - {assignment.vehicle.license_plate}',
         'now': now,
-        'hours_parked': hours_parked,
+        'hours_parked': hours_to_charge,
+        'formatted_duration': format_duration(hours_to_charge),
+        'formatted_actual_duration': format_duration(total_minutes / 60),
         'tariff': tariff,
         'total_cost': total_cost
     }
@@ -626,9 +684,14 @@ def print_receipt(request, pk):
     if assignment.exit_time and assignment.entry_time:
         duration = assignment.exit_time - assignment.entry_time
         total_minutes = duration.total_seconds() / 60
-        hours_parked = math.ceil(total_minutes / 60)
+        
+        # Calculo de horas cobradas (fracciones de 30 min)
+        half_hours = math.ceil(total_minutes / 30)
+        hours_parked = Decimal(str(half_hours)) * Decimal('0.5')
+        actual_hours = total_minutes / 60
     else:
         hours_parked = 0
+        actual_hours = 0
     
     try:
         tariff = VehicleTariff.objects.get(
@@ -642,6 +705,8 @@ def print_receipt(request, pk):
     context = {
         'assignment': assignment,
         'hours_parked': hours_parked,
+        'formatted_duration': format_duration(hours_parked),
+        'formatted_actual_duration': format_duration(actual_hours),
         'tariff_amount': tariff_amount,
         'now': timezone.now()
     }

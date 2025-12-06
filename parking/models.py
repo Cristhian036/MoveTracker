@@ -363,8 +363,10 @@ class ParkingAssignment(models.Model):
         duration = self.exit_time - self.entry_time
         total_minutes = duration.total_seconds() / 60
         
-        # Redondear hacia arriba cada hora (fracción se cobra como hora completa)
-        hours = math.ceil(total_minutes / 60)
+        # Cobrar por fracciones de 30 minutos
+        # Si es menos de 30 min, se cobra media hora. Si es entre 30 y 60, una hora, etc.
+        half_hours = math.ceil(total_minutes / 30)
+        hours_to_charge = Decimal(str(half_hours)) * Decimal('0.5')
         
         try:
             tariff = VehicleTariff.objects.get(
@@ -372,8 +374,8 @@ class ParkingAssignment(models.Model):
                 is_active=True
             )
             
-            # Calcular costo basado en horas completas
-            return Decimal(str(hours)) * tariff.rate_per_hour
+            # Calcular costo
+            return hours_to_charge * tariff.rate_per_hour
         except VehicleTariff.DoesNotExist:
             return None
 

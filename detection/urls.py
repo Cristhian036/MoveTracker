@@ -9,4 +9,5 @@ urlpatterns = [
     path('upload/', views.upload_video, name='upload_video'),
     path('uploaded_feed/<str:filename>/', views.uploaded_video_feed, name='uploaded_video_feed'),
     path('get_latest_plate/', views.get_latest_plate, name='get_latest_plate'),
+    path('delete_video/<str:filename>/', views.delete_video, name='delete_video_file'),
 ]

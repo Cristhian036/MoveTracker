@@ -11,6 +11,9 @@ import os
 # import pytesseract # Removed Tesseract
 from django.core.files.storage import FileSystemStorage
 import sys
+from parking.models import ParkingReservation, ParkingSpace, Vehicle, ParkingAssignment, VehicleType
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 # Importar motor OCR personalizado
 try:
@@ -36,8 +39,97 @@ VIDEO_PATH = os.path.join(BASE_DIR, 'detection', 'videos')
 
 # Diccionario global para ultimas detecciones
 latest_detections = {}
+# Diccionario global para historial de detecciones
+detection_history = {}
 # Diccionario global para progreso de video
 video_progress = {}
+# Diccionario global para estado de rastreo (indice actual en historial)
+tracking_state = {}
+# Diccionario global para contador de frames sin placa
+frames_without_plate_state = {}
+# Diccionario global para estado del video
+video_status = {}
+
+def create_automatic_reservation(plate, vehicle_type_str, user):
+    # Map vehicle type
+    type_map = {
+        'car': VehicleType.CAR,
+        'truck': VehicleType.TRUCK,
+        'motorcycle': VehicleType.MOTORCYCLE,
+        'bus': VehicleType.TRUCK,
+        'Auto': VehicleType.CAR,
+        'Camioneta': VehicleType.TRUCK,
+        'Moto': VehicleType.MOTORCYCLE
+    }
+    v_type = type_map.get(vehicle_type_str, VehicleType.CAR)
+    
+    # Check if vehicle is already inside (active assignment)
+    active_assignment = ParkingAssignment.objects.filter(
+        vehicle__license_plate=plate,
+        status=ParkingAssignment.AssignmentStatus.ACTIVE
+    ).exists()
+    
+    if active_assignment:
+        return False
+
+    # Find available space
+    space = ParkingSpace.objects.filter(
+        status=ParkingSpace.SpaceStatus.AVAILABLE,
+        is_active=True
+    ).first()
+    
+    if not space:
+        return False
+        
+    try:
+        # Get or create vehicle
+        vehicle, created = Vehicle.objects.get_or_create(
+            license_plate=plate,
+            defaults={
+                'vehicle_type': v_type,
+                'color': 'Desconocido',
+                'owner': None,
+                'registered_by': user if user and user.is_authenticated else None
+            }
+        )
+        
+        if not created and not vehicle.vehicle_type:
+            vehicle.vehicle_type = v_type
+            vehicle.save()
+            
+        # Create Reservation
+        reservation = ParkingReservation(
+            customer_name="Cliente Rápido (Cámara)",
+            vehicle_plate=plate,
+            vehicle_type_temp=v_type,
+            parking_space=space,
+            reservation_date=timezone.now(),
+            status=ParkingReservation.ReservationStatus.CONFIRMED,
+            is_quick_reservation=True,
+            created_by=user if user and user.is_authenticated else None,
+            vehicle=vehicle
+        )
+        reservation.save()
+        
+        # Create Assignment
+        assignment = ParkingAssignment(
+            vehicle=vehicle,
+            parking_space=space,
+            status=ParkingAssignment.AssignmentStatus.ACTIVE,
+            assigned_by=user if user and user.is_authenticated else None,
+            entry_time=timezone.now()
+        )
+        assignment.save()
+        
+        # Update Space
+        space.status = ParkingSpace.SpaceStatus.OCCUPIED
+        space.save()
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error creating automatic reservation: {e}")
+        return False
 
 def cropped(detections, image):
     bounding_box = detections.xyxy
@@ -58,7 +150,7 @@ def cropped(detections, image):
     cropped_image = image[ymin:ymax, xmin:xmax]
     return cropped_image
 
-def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, start_frame=0):
+def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, start_frame=0, user=None):
     if isinstance(source, int):
         # Usar DirectShow para camara en Windows
         cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
@@ -94,7 +186,18 @@ def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, star
         if fps > 0:
             delay = 1 / fps
 
-    frames_without_plate = 0
+    if start_frame == 0 and detection_id:
+        # Resetear historial y estados si se inicia desde el principio
+        detection_history[detection_id] = []
+        latest_detections[detection_id] = {}
+        video_progress[detection_id] = 0
+        tracking_state.pop(detection_id, None)
+        frames_without_plate_state.pop(detection_id, None)
+        video_status[detection_id] = 'playing'
+
+    # Recuperar estado previo si existe
+    frames_without_plate = frames_without_plate_state.get(detection_id, 0) if detection_id else 0
+    current_history_index = tracking_state.get(detection_id) if detection_id else None
 
     try:
         while cap.isOpened():
@@ -107,8 +210,9 @@ def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, star
             ret, frame = cap.read()
             if not ret:
                 if isinstance(source, str):
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
+                    if detection_id:
+                        video_status[detection_id] = 'finished'
+                    break
                 else:
                     print("Error: Failed to capture frame from live camera.")
                     break
@@ -134,10 +238,22 @@ def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, star
                 # Obtener tipo de vehiculo
                 vehicle_class_id = detections_t.class_id[0]
                 vehicle_type = model_t.names[vehicle_class_id]
+                
+                # Reemplazar 'bus' por 'truck' si se solicita
+                if vehicle_type == 'bus':
+                    vehicle_type = 'truck'
+                
+                # Traducir a español
+                translations = {
+                    'car': 'Auto',
+                    'truck': 'Camioneta',
+                    'motorcycle': 'Moto'
+                }
+                vehicle_type = translations.get(vehicle_type, vehicle_type)
 
                 # Anotar vehiculos
                 annotated_image = bounding_box_annotator_vehicle.annotate(scene=annotated_image, detections=detections_t)
-                annotated_image = label_annotator_vehicle.annotate(scene=annotated_image, detections=detections_t)
+                annotated_image = label_annotator_vehicle.annotate(scene=annotated_image, detections=detections_t, labels=[vehicle_type])
                 
                 # Procesar primer vehiculo para placa
                 cropped_image_t = cropped(detections_t, frame)
@@ -210,7 +326,56 @@ def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, star
                                                 'vehicle_type': vehicle_type,
                                                 'confidence': best_conf
                                             }
-                                
+                                        
+                                        # Actualizar historial de detecciones
+                                        if detection_id not in detection_history:
+                                            detection_history[detection_id] = []
+                                        
+                                        history_list = detection_history[detection_id]
+                                        
+                                        # Si no estamos rastreando un vehiculo especifico (current_history_index es None),
+                                        # asumimos que es un nuevo vehiculo y creamos una nueva entrada.
+                                        if current_history_index is None:
+                                            history_list.append({
+                                                'plate': display_text,
+                                                'vehicle_type': vehicle_type,
+                                                'confidence': best_conf,
+                                                'registered': False
+                                            })
+                                            current_history_index = len(history_list) - 1
+                                            if detection_id:
+                                                tracking_state[detection_id] = current_history_index
+                                            
+                                            # Limitar historial a ultimos 50 registros
+                                            if len(history_list) > 50:
+                                                history_list.pop(0)
+                                                current_history_index -= 1 # Ajustar indice si se elimino el primero
+                                                if detection_id:
+                                                    tracking_state[detection_id] = current_history_index
+                                        else:
+                                            # Si estamos rastreando un vehiculo, actualizamos su entrada si la confianza es mejor
+                                            # o si simplemente queremos mantener la ultima lectura mas confiable
+                                            if current_history_index < len(history_list):
+                                                current_entry = history_list[current_history_index]
+                                                # Actualizar solo si la confianza es mayor para obtener la mejor lectura posible de este vehiculo
+                                                if best_conf > current_entry['confidence']:
+                                                    current_entry['plate'] = display_text
+                                                    current_entry['vehicle_type'] = vehicle_type
+                                                    current_entry['confidence'] = best_conf
+                                        
+                                        # Intentar registrar reserva automatica si es camara en vivo y confianza alta
+                                        if current_history_index is not None and current_history_index < len(history_list):
+                                            current_entry = history_list[current_history_index]
+                                            if (not current_entry.get('registered', False) and 
+                                                current_entry['confidence'] > 0.85 and 
+                                                detection_id and detection_id.startswith('live_')):
+                                                
+                                                success = create_automatic_reservation(current_entry['plate'], current_entry['vehicle_type'], user)
+                                                if success:
+                                                    current_entry['registered'] = True
+                                                    # Opcional: Agregar indicador visual en la imagen
+                                                    cv2.putText(annotated_image, 'REGISTRADO', (int(x1_nuevo), int(y1_nuevo)-40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
                             except Exception as e:
                                 print(f'OCR Error: {e}')
                                 pass
@@ -221,7 +386,15 @@ def stream_video(source=VIDEO_PATH, detection_id=None, delete_source=False, star
             else:
                 frames_without_plate = 0
             
+            # Guardar estado de frames sin placa
+            if detection_id:
+                frames_without_plate_state[detection_id] = frames_without_plate
+            
             if frames_without_plate > 30 and detection_id:
+                # Resetear rastreo de vehiculo actual en historial
+                current_history_index = None
+                tracking_state.pop(detection_id, None)
+                
                 if detection_id in latest_detections:
                     # Resetear confianza para permitir nuevas detecciones de otros vehiculos
                     latest_detections[detection_id]['confidence'] = 0.0
@@ -260,7 +433,7 @@ def live_feed(request):
         camera_index = int(camera_index)
     except ValueError:
         camera_index = 0
-    return StreamingHttpResponse(stream_video(camera_index, detection_id=f'live_{camera_index}'), content_type='multipart/x-mixed-replace; boundary=frame')
+    return StreamingHttpResponse(stream_video(camera_index, detection_id=f'live_{camera_index}', user=request.user), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def index(request):
     return redirect('/')
@@ -317,7 +490,7 @@ def uploaded_video_feed(request, filename):
     # Si no es ruta local, buscar en media/videos (es un archivo subido)
     if not video_path:
         video_path = os.path.join(BASE_DIR, 'media', 'videos', filename)
-        should_delete = True
+        should_delete = False # No borrar automaticamente para permitir reinicio
 
     try:
         start_frame = int(request.GET.get('start_frame', 0))
@@ -330,14 +503,39 @@ def uploaded_video_feed(request, filename):
 def get_latest_plate(request):
     detection_id = request.GET.get('detection_id')
     detection_data = latest_detections.get(detection_id, {})
+    history = detection_history.get(detection_id, [])
     current_frame = video_progress.get(detection_id, 0)
+    status = video_status.get(detection_id, 'playing')
     
     if isinstance(detection_data, str):
-        return JsonResponse({'plate': detection_data, 'vehicle_type': '', 'current_frame': current_frame})
+        return JsonResponse({'plate': detection_data, 'vehicle_type': '', 'current_frame': current_frame, 'history': [], 'status': status})
         
     return JsonResponse({
         'plate': detection_data.get('plate', ''),
         'vehicle_type': detection_data.get('vehicle_type', ''),
         'confidence': detection_data.get('confidence', 0.0),
-        'current_frame': current_frame
+        'current_frame': current_frame,
+        'history': history,
+        'status': status
     })
+
+def delete_video(request, filename):
+    # Intentar decodificar como ruta local (base64)
+    try:
+        decoded_path = base64.urlsafe_b64decode(filename).decode()
+        if os.path.exists(decoded_path):
+            # Es ruta local, no borrar
+            return JsonResponse({'status': 'ignored'})
+    except Exception:
+        pass
+    
+    # Es archivo subido
+    file_path = os.path.join(BASE_DIR, 'media', 'videos', filename)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            return JsonResponse({'status': 'deleted'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+            
+    return JsonResponse({'status': 'not_found'})
